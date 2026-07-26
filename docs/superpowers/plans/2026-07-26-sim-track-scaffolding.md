@@ -832,6 +832,42 @@ def test_rows_sorted_deterministically(tmp_path):
     write_run(tmp_path, task="task_a", ts="20260726T000004")
     rows, _, _ = build_ledger.build_ledger(tmp_path)
     assert [r["task"] for r in rows] == ["task_a", "task_b"]
+
+
+def test_meta_path_mismatch_raises(tmp_path):
+    d = write_run(tmp_path, seed=1)
+    meta = json.loads((d / "run_meta.json").read_text())
+    meta["seed"] = 2
+    (d / "run_meta.json").write_text(json.dumps(meta))
+    with pytest.raises(ValueError) as exc:
+        build_ledger.build_ledger(tmp_path)
+    assert "disagrees" in str(exc.value)
+
+
+def test_validation_error_names_run_dir(tmp_path):
+    d = write_run(tmp_path, success=False, validity="infra_failure")
+    with pytest.raises(ValueError) as exc:
+        build_ledger.build_ledger(tmp_path)
+    assert str(d) in str(exc.value)
+    assert "evidence" in str(exc.value)
+
+
+def test_malformed_json_names_run_dir(tmp_path):
+    d = write_run(tmp_path)
+    (d / "run_meta.json").write_text("{not json")
+    with pytest.raises(ValueError) as exc:
+        build_ledger.build_ledger(tmp_path)
+    assert str(d) in str(exc.value)
+
+
+def test_success_written_as_int(tmp_path):
+    write_run(tmp_path, success=False, validity="valid_failure")
+    rows, _, _ = build_ledger.build_ledger(tmp_path)
+    out = tmp_path / "ledger.csv"
+    build_ledger.write_csv(rows, out)
+    with open(out) as f:
+        got = list(csv.DictReader(f))
+    assert got[0]["success"] == "0"
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -876,6 +912,13 @@ def load_row(run_dir):
         json.loads((run_dir / "run_meta.json").read_text()))
     result = validate_result_row(
         json.loads((run_dir / "result_row.json").read_text()))
+    path_ids = tuple(run_dir.parts[-5:-1])
+    meta_ids = (meta["exp_version"], meta["condition"], meta["task"], str(meta["seed"]))
+    if path_ids != meta_ids:
+        raise ValueError(
+            f"path (exp_version, condition, task, seed)={path_ids} "
+            f"disagrees with run_meta {meta_ids}"
+        )
     return {
         "exp_version": meta["exp_version"],
         "condition": meta["condition"],
@@ -905,7 +948,10 @@ def build_ledger(runs_root):
         if not (run_dir / "result_row.json").exists():
             incomplete += 1
             continue
-        row = load_row(run_dir)
+        try:
+            row = load_row(run_dir)
+        except ValueError as e:
+            raise ValueError(f"{run_dir}: {e}") from e
         if row["seed"] == 0:
             skipped_seed0 += 1
             continue
@@ -916,10 +962,13 @@ def build_ledger(runs_root):
 
 
 def write_csv(rows, out_path):
+    Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=LEDGER_COLUMNS)
         writer.writeheader()
-        writer.writerows(rows)
+        for row in rows:
+            # success as 1/0: bool("False") is True, a trap for CSV consumers
+            writer.writerow({**row, "success": int(row["success"])})
 
 
 def main(argv=None):
@@ -942,7 +991,7 @@ if __name__ == "__main__":
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `.venv-dev/bin/python -m pytest track/tests/test_build_ledger.py -v`
-Expected: 6 PASS
+Expected: 10 PASS
 
 - [ ] **Step 5: Commit**
 
@@ -1582,7 +1631,7 @@ git commit -m "docs: README with quick start, layout, standing rules"
 - [ ] **Step 1: Run the entire test suite**
 
 Run: `.venv-dev/bin/python -m pytest track/tests -v`
-Expected: **54 PASS** (3 track_env + 9 pin_check + 3 key_hygiene + 15 schemas + 6 ledger + 6 disk_guard + 6 manifests + 6 setup). Zero failures, zero errors.
+Expected: **58 PASS** (3 track_env + 9 pin_check + 3 key_hygiene + 15 schemas + 10 ledger + 6 disk_guard + 6 manifests + 6 setup). Zero failures, zero errors.
 
 - [ ] **Step 2: Run the shell scripts through bash -n once more**
 
