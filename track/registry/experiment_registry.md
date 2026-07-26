@@ -17,3 +17,5 @@ change (plan section 2, "Claude Code + superpowers working model").
 | Date | Change | Files | Reviewed by |
 |---|---|---|---|
 | 2026-07-26 | Initial track scaffolding (this repo structure, scripts, schemas, tests) | track/ | pending mentor review |
+| 2026-07-26 | setup.sh Day-2 fixes: model-repo checkpoint, assets stage, lerobot git pin, hf-cache cleanup | track/setup/setup.sh | pending mentor review |
+| 2026-07-26 | Day-2 smoke tests, env-manifest generator, setup notes, requirements freeze | track/smoke/, track/setup/{gen_env_manifest.sh,env_manifest.md,setup_notes.md,requirements.lock} | pending mentor review |

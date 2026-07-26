@@ -36,6 +36,12 @@ make_venv() {
     # Keep the pyproject-pinned RLinf/OpenPI/LIBERO-PRO forks; never
     # upgrade robosuite or the LIBERO forks (plan + spec section 2).
     "$REPO/.venv/bin/pip" install -e "$REPO/RPent[full]"
+    # rlinf-openpi's real lerobot pin lives in a uv-only [tool.uv.sources]
+    # table that pip ignores, so pip resolves a lerobot without the
+    # lerobot.common namespace openpi imports (found Day 2). Install the
+    # fork-pinned git rev; --no-deps so it cannot downgrade torch.
+    GIT_LFS_SKIP_SMUDGE=1 "$REPO/.venv/bin/pip" install --no-deps \
+        "lerobot @ git+https://github.com/huggingface/lerobot@0cf864870cf29f4738d3ade893e6fd13fbd7cdb5"
 }
 
 fetch_checkpoint() {
@@ -59,6 +65,13 @@ fetch_checkpoint() {
     verify_checkpoint "$CKPT_DIR" "$SUMS"
 }
 
+fetch_sim_assets() {
+    # LIBERO-PRO simulator assets are not shipped in the pip wheel — without
+    # them env reset dies on missing scene XMLs (RPent README step 2).
+    # Idempotent via --skip-existing.
+    "$REPO/.venv/bin/liberopro-download-assets" --skip-existing
+}
+
 freeze_requirements() {
     # Run once, after the Day-2 smoke tests pass (spec section 2).
     "$REPO/.venv/bin/pip" freeze > "$REPO/track/setup/requirements.lock"
@@ -69,8 +82,9 @@ case "${1:-all}" in
     check)      assert_gpu; "$REPO/track/setup/pin_check.sh" ;;
     rpent)      clone_rpent ;;
     venv)       make_venv ;;
+    assets)     fetch_sim_assets ;;
     checkpoint) fetch_checkpoint ;;
     freeze)     freeze_requirements ;;
-    all)        assert_gpu; clone_rpent; make_venv; fetch_checkpoint ;;
-    *) echo "usage: setup.sh [check|rpent|venv|checkpoint|freeze|all]" >&2; exit 64 ;;
+    all)        assert_gpu; clone_rpent; make_venv; fetch_sim_assets; fetch_checkpoint ;;
+    *) echo "usage: setup.sh [check|rpent|venv|assets|checkpoint|freeze|all]" >&2; exit 64 ;;
 esac
