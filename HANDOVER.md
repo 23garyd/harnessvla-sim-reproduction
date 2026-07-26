@@ -56,8 +56,10 @@ that moves a real arm is a safety problem.
 **Sim track (start here, Days 1–3 of the sim plan):**
 1. Clone RPent; `pip install -e ".[full]"` keeping the pyproject-pinned
    RLinf/OpenPI/LIBERO-PRO forks (do NOT upgrade robosuite or the forks).
-2. Download the frozen checkpoint `RLinf/rlinf-pi05-libero-130-fullshot-sft`
-   (record checksum); set `PI05_CHECKPOINT_PATH`, `LIBERO_TYPE=pro`, `MUJOCO_GL=egl`.
+2. Download the frozen checkpoint `RLinf/RLinf-Pi05-LIBERO-130-fullshot-SFT`
+   (correction 2026-07-26: it is a HF *model* repo with this casing — the plan's
+   `datasets/rlinf-pi05-libero-130-fullshot-sft` URL 404s); record checksum; set
+   `PI05_CHECKPOINT_PATH`, `LIBERO_TYPE=pro`, `MUJOCO_GL=egl`.
 3. Smoke-test `robots/libero/env_server.py` and `vla_server.py` independently on the
    A6000 (reset, render, one pi0.5 inference, one action chunk, clean shutdown).
 4. Freeze 4 tasks (≥2 families, both T and S perturbations) + seeds s1–s5 (verify

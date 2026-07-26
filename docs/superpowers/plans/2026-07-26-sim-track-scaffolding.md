@@ -1484,7 +1484,10 @@ source "$REPO/track/setup/setup_lib.sh"
 
 PINS="$REPO/track/setup/pins.env"
 RPENT_URL="https://github.com/RLinf/RPent"
-CKPT_REPO="RLinf/rlinf-pi05-libero-130-fullshot-sft"
+# NOTE: the internship plan cites huggingface.co/datasets/RLinf/rlinf-pi05-
+# libero-130-fullshot-sft, but the checkpoint actually lives in a MODEL repo
+# with this casing (verified 2026-07-26; the dataset URL 404s).
+CKPT_REPO="RLinf/RLinf-Pi05-LIBERO-130-fullshot-SFT"
 CKPT_DIR="$REPO/checkpoints/rlinf-pi05-libero-130-fullshot-sft"
 SUMS="$REPO/track/setup/checkpoint.sha256sums"
 
@@ -1521,7 +1524,7 @@ fetch_checkpoint() {
         # it is never exported into run environments (spec section 2).
         HF_TOKEN="$(cat "$HOME/huggingface.txt")" \
             "$REPO/.venv/bin/huggingface-cli" download "$CKPT_REPO" \
-            --repo-type dataset --local-dir "$CKPT_DIR.partial"
+            --repo-type model --local-dir "$CKPT_DIR.partial"
         mv "$CKPT_DIR.partial" "$CKPT_DIR"
     fi
     verify_checkpoint "$CKPT_DIR" "$SUMS"
