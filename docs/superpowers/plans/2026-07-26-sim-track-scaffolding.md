@@ -555,6 +555,54 @@ def test_missing_count_fails():
     del r["counts"]["vla_act_calls"]
     with pytest.raises(ValueError, match="vla_act_calls"):
         schemas.validate_result_row(r)
+
+
+def test_valid_failure_row_passes():
+    r = valid_row()
+    r["success"] = False
+    r["validity"] = "valid_failure"
+    schemas.validate_result_row(r)
+
+
+def test_budget_exhausted_row_passes():
+    r = valid_row()
+    r["success"] = False
+    r["validity"] = "budget_exhausted"
+    r["terminal_reason"] = "step_budget"
+    schemas.validate_result_row(r)
+
+
+def test_result_row_wrong_type_fails():
+    r = valid_row()
+    r["success"] = "yes"
+    with pytest.raises(ValueError, match="success"):
+        schemas.validate_result_row(r)
+
+
+def test_negative_count_fails():
+    r = valid_row()
+    r["counts"]["steps"] = -5
+    with pytest.raises(ValueError, match="steps"):
+        schemas.validate_result_row(r)
+
+
+def test_non_finite_wall_seconds_fails():
+    r = valid_row()
+    r["wall_seconds"] = float("nan")
+    with pytest.raises(ValueError, match="wall_seconds"):
+        schemas.validate_result_row(r)
+    r["wall_seconds"] = -1.0
+    with pytest.raises(ValueError, match="wall_seconds"):
+        schemas.validate_result_row(r)
+
+
+def test_extra_keys_allowed():
+    m = valid_meta()
+    m["notes"] = "anything"
+    schemas.validate_run_meta(m)
+    r = valid_row()
+    r["evidence"] = "harmless on non-infra rows"
+    schemas.validate_result_row(r)
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -569,7 +617,9 @@ Expected: ERROR — `ModuleNotFoundError: track.analysis.schemas`.
 
 run_meta.json  - written at launch, immutable.
 result_row.json - written at termination; the only input to the ledger.
+Extra/unknown keys are intentionally permitted (forward compatibility).
 """
+import math
 
 VALIDITY_STATUSES = {
     "success",
@@ -640,6 +690,17 @@ def validate_run_meta(meta):
 def validate_result_row(row):
     _require(row, _RESULT_ROW_REQUIRED, "result_row")
     _require(row["counts"], _COUNTS_REQUIRED, "result_row.counts")
+    for key in _COUNTS_REQUIRED:
+        if row["counts"][key] < 0:
+            raise ValueError(
+                f"result_row.counts: key '{key}' must be >= 0, "
+                f"got {row['counts'][key]}"
+            )
+    ws = row["wall_seconds"]
+    if isinstance(ws, bool) or not math.isfinite(ws) or ws < 0:
+        raise ValueError(
+            f"result_row: wall_seconds must be a finite number >= 0, got {ws!r}"
+        )
     if row["validity"] not in VALIDITY_STATUSES:
         raise ValueError(
             f"result_row: unknown validity '{row['validity']}', "
@@ -663,7 +724,7 @@ def validate_result_row(row):
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `.venv-dev/bin/python -m pytest track/tests/test_schemas.py -v`
-Expected: 9 PASS
+Expected: 15 PASS
 
 - [ ] **Step 5: Commit**
 
@@ -1521,7 +1582,7 @@ git commit -m "docs: README with quick start, layout, standing rules"
 - [ ] **Step 1: Run the entire test suite**
 
 Run: `.venv-dev/bin/python -m pytest track/tests -v`
-Expected: **48 PASS** (3 track_env + 9 pin_check + 3 key_hygiene + 9 schemas + 6 ledger + 6 disk_guard + 6 manifests + 6 setup). Zero failures, zero errors.
+Expected: **54 PASS** (3 track_env + 9 pin_check + 3 key_hygiene + 15 schemas + 6 ledger + 6 disk_guard + 6 manifests + 6 setup). Zero failures, zero errors.
 
 - [ ] **Step 2: Run the shell scripts through bash -n once more**
 
