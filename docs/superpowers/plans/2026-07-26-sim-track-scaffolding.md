@@ -135,6 +135,13 @@ def test_track_env_repo_derived_from_location(bash):
     # REPO must come from the file's own location, not the caller's cwd.
     r = bash(f'cd /tmp && source "{ENV}" && echo "$PI05_CHECKPOINT_PATH"')
     assert r.stdout.strip().startswith(str(REPO)), r.stdout
+
+
+def test_track_env_fails_loudly_under_non_bash(bash):
+    # dash has no BASH_SOURCE; without the guard it would silently set REPO=/.
+    r = bash(f'sh -c \'. "{ENV}" && echo "$PI05_CHECKPOINT_PATH"\'')
+    assert "FATAL" in r.stderr
+    assert "//checkpoints" not in r.stdout
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -147,8 +154,9 @@ Expected: FAIL (file `track_env.sh` does not exist; `source` returns non-zero).
 ```bash
 #!/usr/bin/env bash
 # Canonical environment for every HarnessVLA sim-track run and queue.
-# Source this file; do not execute it. No run may depend on shell state
-# beyond what is set here.
+# Source this file from bash; do not execute it. No run may depend on shell
+# state beyond what is set here.
+[ -n "${BASH_VERSION:-}" ] || { echo "FATAL: track_env.sh must be sourced by bash" >&2; return 1 2>/dev/null || exit 1; }
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # derived, never hardcoded
 
 export CUDA_VISIBLE_DEVICES=0            # A6000 only; TITAN X never used
@@ -160,7 +168,7 @@ export MUJOCO_GL=egl
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `.venv-dev/bin/python -m pytest track/tests/test_track_env.py -v`
-Expected: 2 PASS
+Expected: 3 PASS
 
 - [ ] **Step 5: Commit**
 
@@ -385,6 +393,7 @@ Expected: first two FAIL (planner_env.sh missing); third PASSES vacuously (no la
 # Source this from every launcher. run_planner strips billing keys so the
 # claude_code planner bills only the claude.ai subscription and can never
 # silently pick up ~/anthropic-api.txt (billing policy, HANDOVER.md).
+[ -n "${BASH_VERSION:-}" ] || { echo "FATAL: planner_env.sh must be sourced by bash" >&2; return 1 2>/dev/null || exit 1; }
 run_planner() {
     env -u ANTHROPIC_API_KEY -u OPENAI_API_KEY "$@"
 }
@@ -1471,7 +1480,7 @@ git commit -m "docs: README with quick start, layout, standing rules"
 - [ ] **Step 1: Run the entire test suite**
 
 Run: `.venv-dev/bin/python -m pytest track/tests -v`
-Expected: **43 PASS** (2 track_env + 5 pin_check + 3 key_hygiene + 9 schemas + 6 ledger + 6 disk_guard + 6 manifests + 6 setup). Zero failures, zero errors.
+Expected: **44 PASS** (3 track_env + 5 pin_check + 3 key_hygiene + 9 schemas + 6 ledger + 6 disk_guard + 6 manifests + 6 setup). Zero failures, zero errors.
 
 - [ ] **Step 2: Run the shell scripts through bash -n once more**
 
