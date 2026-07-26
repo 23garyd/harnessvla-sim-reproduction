@@ -1668,8 +1668,11 @@ After the Day-2 smoke tests pass: `track/setup/setup.sh freeze` to write
 
 ```bash
 python3 -m venv .venv-dev && .venv-dev/bin/pip install pytest
-.venv-dev/bin/python -m pytest track/tests -v
+PYTHONPATH= .venv-dev/bin/python -m pytest track/tests -v
 ```
+
+(the `PYTHONPATH=` prefix guards against ROS site-packages leaking into pytest
+on this machine)
 
 ## Layout
 
