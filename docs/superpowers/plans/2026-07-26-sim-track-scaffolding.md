@@ -1736,6 +1736,9 @@ git add -A && git diff --cached --quiet || git commit -m "chore: scaffolding ver
 
 ## Explicitly deferred (do NOT build now)
 
+- **`track/setup/env_manifest.md` + its generator** (spec section 1: RPent commit + pyproject-pinned fork commits, OS/driver/CUDA record) — the fork commits come from the *resolved* RPent pyproject, so this can only be generated during the Day-2 install; it is a Day-2 deliverable per the internship plan (env_manifest.md prompt box).
+- **Manifest-freeze seed check** (spec section 3: verify s1–s5 map to LIBERO init states distinct from seed 0) — needs LIBERO installed; belongs to the Day-3 task/seed freeze step. Record it in the experiment registry when the first manifest is frozen.
+
 - **GitHub remote creation and push** — needs the private repo created under the nuPylot org first; do this at the next session with `gh repo create` or the web UI, then `git remote add origin … && git push -u origin main`.
 - **Running `setup.sh all`** — Day 2 of the internship plan (network + GPU + hours of download).
 - **The batch runner and overnight-queue tooling** — Day 6 of the internship plan; it consumes `manifests.py`, `disk_guard.py`, and `schemas.py` built here.

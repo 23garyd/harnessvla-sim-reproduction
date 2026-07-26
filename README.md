@@ -9,10 +9,14 @@ frozen pi0.5 checkpoint. Runs on the RTX A6000 (GPU 0) only.
 
 ## Quick start
 
+Prerequisites: HF token at `~/huggingface.txt`, NVIDIA driver loaded
+(GPU 0 = RTX A6000), system Python 3.10.
+
 ```bash
 git clone <this-repo> && cd github_sow_harnessVLA
 track/setup/setup.sh all            # GPU assert, RPent clone, venv, checkpoint
-track/setup/pin_check.sh --record   # first time only, after reviewing the clone
+track/setup/pin_check.sh --record   # first-ever setup only, after reviewing the clone
+track/setup/pin_check.sh            # every later session: verify pin + clean worktree
 source track/setup/track_env.sh     # before any run or queue
 ```
 
