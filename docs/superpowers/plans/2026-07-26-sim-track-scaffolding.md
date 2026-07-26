@@ -1190,6 +1190,41 @@ def test_load_manifest_from_json(tmp_path):
     p.write_text(json.dumps(valid_manifest()))
     m = manifests.load_manifest(p)
     assert m["exp_version"] == "v1"
+
+
+def test_non_bool_bootstrap_only_fails():
+    m = valid_manifest()
+    m["cells"][0]["seeds"][1]["bootstrap_only"] = "no"
+    with pytest.raises(ValueError, match="bootstrap_only"):
+        manifests.validate_manifest(m)
+
+
+def test_duplicate_seed_fails():
+    m = valid_manifest()
+    m["cells"][0]["seeds"].append({"seed": 1, "bootstrap_only": False})
+    with pytest.raises(ValueError, match="duplicate seed"):
+        manifests.validate_manifest(m)
+
+
+def test_duplicate_cell_fails():
+    m = valid_manifest()
+    m["cells"].append(dict(m["cells"][0]))
+    with pytest.raises(ValueError, match="duplicate cell"):
+        manifests.validate_manifest(m)
+
+
+def test_non_str_cell_field_fails():
+    m = valid_manifest()
+    m["cells"][0]["condition"] = 123
+    with pytest.raises(ValueError, match="condition"):
+        manifests.validate_manifest(m)
+
+
+def test_empty_seeds_fails():
+    m = valid_manifest()
+    m["cells"][0]["seeds"] = []
+    with pytest.raises(ValueError, match="seeds"):
+        manifests.validate_manifest(m)
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -1232,15 +1267,32 @@ def validate_manifest(manifest):
     _require(manifest["caps"], _CAPS_REQUIRED, "manifest.caps")
     if not isinstance(manifest["cells"], list) or not manifest["cells"]:
         raise ValueError("manifest: 'cells' must be a non-empty list")
+    seen_cells = set()
     for i, cell in enumerate(manifest["cells"]):
         where = f"manifest.cells[{i}]"
-        for key in ("condition", "suite", "task", "seeds"):
+        for key in ("condition", "suite", "task"):
             if key not in cell:
                 raise ValueError(f"{where}: missing required key '{key}'")
+            if not isinstance(cell[key], str):
+                raise ValueError(f"{where}: key '{key}' must be str")
+        if not isinstance(cell.get("seeds"), list) or not cell["seeds"]:
+            raise ValueError(f"{where}: 'seeds' must be a non-empty list")
+        cell_id = (cell["condition"], cell["suite"], cell["task"])
+        if cell_id in seen_cells:
+            raise ValueError(f"{where}: duplicate cell {cell_id}")
+        seen_cells.add(cell_id)
+        seen_seeds = set()
         for entry in cell["seeds"]:
             if "seed" not in entry or "bootstrap_only" not in entry:
                 raise ValueError(
                     f"{where}: each seed entry needs 'seed' and 'bootstrap_only'")
+            if not isinstance(entry["seed"], int) or isinstance(entry["seed"], bool):
+                raise ValueError(f"{where}: 'seed' must be int")
+            if not isinstance(entry["bootstrap_only"], bool):
+                raise ValueError(f"{where}: 'bootstrap_only' must be bool")
+            if entry["seed"] in seen_seeds:
+                raise ValueError(f"{where}: duplicate seed {entry['seed']}")
+            seen_seeds.add(entry["seed"])
             if entry["seed"] == 0 and not entry["bootstrap_only"]:
                 raise ValueError(
                     f"{where}: seed 0 bootstraps memory only and must be "
@@ -1267,7 +1319,7 @@ def load_manifest(path):
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `.venv-dev/bin/python -m pytest track/tests/test_manifests.py -v`
-Expected: 6 PASS
+Expected: 11 PASS
 
 - [ ] **Step 5: Commit**
 
@@ -1631,7 +1683,7 @@ git commit -m "docs: README with quick start, layout, standing rules"
 - [ ] **Step 1: Run the entire test suite**
 
 Run: `.venv-dev/bin/python -m pytest track/tests -v`
-Expected: **58 PASS** (3 track_env + 9 pin_check + 3 key_hygiene + 15 schemas + 10 ledger + 6 disk_guard + 6 manifests + 6 setup). Zero failures, zero errors.
+Expected: **63 PASS** (3 track_env + 9 pin_check + 3 key_hygiene + 15 schemas + 10 ledger + 6 disk_guard + 11 manifests + 6 setup). Zero failures, zero errors.
 
 - [ ] **Step 2: Run the shell scripts through bash -n once more**
 
