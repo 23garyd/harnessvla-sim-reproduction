@@ -1525,6 +1525,9 @@ fetch_checkpoint() {
         HF_TOKEN="$(cat "$HOME/huggingface.txt")" \
             "$REPO/.venv/bin/huggingface-cli" download "$CKPT_REPO" \
             --repo-type model --local-dir "$CKPT_DIR.partial"
+        # Drop huggingface-cli's resume cache: its volatile lock/metadata files
+        # must not end up in the recorded checksums.
+        rm -rf "$CKPT_DIR.partial/.cache"
         mv "$CKPT_DIR.partial" "$CKPT_DIR"
     fi
     verify_checkpoint "$CKPT_DIR" "$SUMS"
