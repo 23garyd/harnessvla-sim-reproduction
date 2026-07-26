@@ -1413,6 +1413,14 @@ def test_setup_usage_on_bad_subcommand(bash):
     r = bash(f'"{SETUP}" frobnicate')
     assert r.returncode == 64
     assert "usage:" in r.stderr
+
+
+def test_assert_gpu_fails_without_nvidia_smi(bash, tmp_path):
+    empty = tmp_path / "bin"
+    empty.mkdir()
+    r = bash(f'export PATH="{empty}"; source "{LIB}" && assert_gpu')
+    assert r.returncode != 0
+    assert "nvidia-smi not found" in r.stderr
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -1429,6 +1437,7 @@ Expected: FAIL/ERROR on all 6 (scripts missing).
 # Fail unless GPU 0 is the RTX A6000 (spec section 2: a driver
 # re-enumeration must never silently move work to the TITAN X).
 assert_gpu() {
+    command -v nvidia-smi >/dev/null || { echo "FATAL: nvidia-smi not found (driver not loaded?)" >&2; return 1; }
     local name
     name="$(nvidia-smi --query-gpu=name --format=csv,noheader -i 0)"
     case "$name" in
@@ -1438,7 +1447,8 @@ assert_gpu() {
 }
 
 # verify_checkpoint <ckpt_dir> <sums_file>
-# First run records checksums; later runs verify against them.
+# First run records checksums (trust-on-first-use: upstream publishes no
+# sums); later runs verify against them.
 verify_checkpoint() {
     local ckpt_dir="$1" sums_file="$2"
     if [ -f "$sums_file" ]; then
@@ -1449,6 +1459,13 @@ verify_checkpoint() {
             > "$sums_file"
         echo "recorded new checksums to $sums_file"
     fi
+}
+
+# read_pin <pins_file>
+# Parse, never source: pins.env content must not run as code.
+# Twin of the inline parse in pin_check.sh (kept standalone as the audit gate).
+read_pin() {
+    grep -E '^RPENT_COMMIT=' "$1" | tail -1 | cut -d= -f2 || true
 }
 ```
 
@@ -1473,11 +1490,11 @@ SUMS="$REPO/track/setup/checkpoint.sha256sums"
 
 clone_rpent() {
     [ -d "$REPO/RPent/.git" ] || git clone "$RPENT_URL" "$REPO/RPent"
-    # shellcheck disable=SC1090
-    source "$PINS"
-    if [ -n "${RPENT_COMMIT:-}" ]; then
-        git -C "$REPO/RPent" checkout --quiet "$RPENT_COMMIT"
-        echo "RPent at pinned $RPENT_COMMIT"
+    local pin
+    pin="$(read_pin "$PINS")"
+    if [ -n "$pin" ]; then
+        git -C "$REPO/RPent" checkout --quiet "$pin"
+        echo "RPent at pinned $pin"
     else
         echo "WARNING: RPENT_COMMIT unset; review the clone, then run" >&2
         echo "         track/setup/pin_check.sh --record" >&2
@@ -1495,11 +1512,17 @@ make_venv() {
 fetch_checkpoint() {
     mkdir -p "$REPO/checkpoints"
     if [ ! -d "$CKPT_DIR" ]; then
+        [ -f "$HOME/huggingface.txt" ] || { echo "FATAL: HF token file missing at $HOME/huggingface.txt" >&2; return 1; }
+        # Download to a temp dir and mv into place atomically so an interrupted
+        # download can never be mistaken for a complete checkpoint (and then
+        # TOFU-recorded as checksum truth by verify_checkpoint).
+        rm -rf "$CKPT_DIR.partial"
         # HF token is read here once and scoped to this command only;
         # it is never exported into run environments (spec section 2).
         HF_TOKEN="$(cat "$HOME/huggingface.txt")" \
             "$REPO/.venv/bin/huggingface-cli" download "$CKPT_REPO" \
-            --repo-type dataset --local-dir "$CKPT_DIR"
+            --repo-type dataset --local-dir "$CKPT_DIR.partial"
+        mv "$CKPT_DIR.partial" "$CKPT_DIR"
     fi
     verify_checkpoint "$CKPT_DIR" "$SUMS"
 }
@@ -1526,7 +1549,7 @@ Then: `chmod +x track/setup/setup.sh` (setup_lib.sh stays 644 — it is sourced,
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `.venv-dev/bin/python -m pytest track/tests/test_setup.py -v`
-Expected: 6 PASS
+Expected: 7 PASS
 
 Note: `setup.sh all` is NOT run by this plan — it needs the GPU, network, and ~hours of downloads, and belongs to Day 2 of the internship plan. The tests cover its parseable structure and the pure functions.
 
@@ -1683,7 +1706,7 @@ git commit -m "docs: README with quick start, layout, standing rules"
 - [ ] **Step 1: Run the entire test suite**
 
 Run: `.venv-dev/bin/python -m pytest track/tests -v`
-Expected: **63 PASS** (3 track_env + 9 pin_check + 3 key_hygiene + 15 schemas + 10 ledger + 6 disk_guard + 11 manifests + 6 setup). Zero failures, zero errors.
+Expected: **64 PASS** (3 track_env + 9 pin_check + 3 key_hygiene + 15 schemas + 10 ledger + 6 disk_guard + 11 manifests + 7 setup). Zero failures, zero errors.
 
 - [ ] **Step 2: Run the shell scripts through bash -n once more**
 
