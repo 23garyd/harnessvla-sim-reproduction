@@ -11,7 +11,7 @@
 **Conventions used throughout:**
 - `REPO` = `/home/demo/github_sow_harnessVLA` (scripts derive it from their own location; tests override via the `TRACK_REPO` env var).
 - Run all commands from the repo root.
-- Test command: `.venv-dev/bin/python -m pytest track/tests -v` (running via `python -m` puts the repo root on `sys.path`, so `track.analysis.*` imports resolve).
+- Test command: `PYTHONPATH= .venv-dev/bin/python -m pytest track/tests -v` (running via `python -m` puts the repo root on `sys.path`, so `track.analysis.*` imports resolve). The `PYTHONPATH=` prefix is required on this machine: the shell profile injects ROS Humble site-packages, whose `launch_testing` pytest plugin aborts collection. Apply the same prefix wherever a task step says to run pytest.
 
 ---
 
