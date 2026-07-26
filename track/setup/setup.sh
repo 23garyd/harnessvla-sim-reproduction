@@ -16,11 +16,11 @@ SUMS="$REPO/track/setup/checkpoint.sha256sums"
 
 clone_rpent() {
     [ -d "$REPO/RPent/.git" ] || git clone "$RPENT_URL" "$REPO/RPent"
-    # shellcheck disable=SC1090
-    source "$PINS"
-    if [ -n "${RPENT_COMMIT:-}" ]; then
-        git -C "$REPO/RPent" checkout --quiet "$RPENT_COMMIT"
-        echo "RPent at pinned $RPENT_COMMIT"
+    local pin
+    pin="$(read_pin "$PINS")"
+    if [ -n "$pin" ]; then
+        git -C "$REPO/RPent" checkout --quiet "$pin"
+        echo "RPent at pinned $pin"
     else
         echo "WARNING: RPENT_COMMIT unset; review the clone, then run" >&2
         echo "         track/setup/pin_check.sh --record" >&2
@@ -38,11 +38,17 @@ make_venv() {
 fetch_checkpoint() {
     mkdir -p "$REPO/checkpoints"
     if [ ! -d "$CKPT_DIR" ]; then
+        [ -f "$HOME/huggingface.txt" ] || { echo "FATAL: HF token file missing at $HOME/huggingface.txt" >&2; return 1; }
+        # Download to a temp dir and mv into place atomically so an interrupted
+        # download can never be mistaken for a complete checkpoint (and then
+        # TOFU-recorded as checksum truth by verify_checkpoint).
+        rm -rf "$CKPT_DIR.partial"
         # HF token is read here once and scoped to this command only;
         # it is never exported into run environments (spec section 2).
         HF_TOKEN="$(cat "$HOME/huggingface.txt")" \
             "$REPO/.venv/bin/huggingface-cli" download "$CKPT_REPO" \
-            --repo-type dataset --local-dir "$CKPT_DIR"
+            --repo-type dataset --local-dir "$CKPT_DIR.partial"
+        mv "$CKPT_DIR.partial" "$CKPT_DIR"
     fi
     verify_checkpoint "$CKPT_DIR" "$SUMS"
 }

@@ -69,3 +69,11 @@ def test_setup_usage_on_bad_subcommand(bash):
     r = bash(f'"{SETUP}" frobnicate')
     assert r.returncode == 64
     assert "usage:" in r.stderr
+
+
+def test_assert_gpu_fails_without_nvidia_smi(bash, tmp_path):
+    empty = tmp_path / "bin"
+    empty.mkdir()
+    r = bash(f'export PATH="{empty}"; source "{LIB}" && assert_gpu')
+    assert r.returncode != 0
+    assert "nvidia-smi not found" in r.stderr
