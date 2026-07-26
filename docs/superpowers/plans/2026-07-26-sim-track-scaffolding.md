@@ -268,12 +268,47 @@ def test_check_fails_on_unrecorded_modification(bash, tmp_path):
     r = run_pin(bash, root)
     assert r.returncode != 0
     assert "unrecorded" in r.stderr
+
+
+def test_check_fails_when_rpent_missing(bash, tmp_path):
+    root = make_track_repo(tmp_path)
+    shutil.rmtree(root / "RPent")
+    r = run_pin(bash, root)
+    assert r.returncode != 0
+    assert "not a git clone" in r.stderr
+
+
+def test_unknown_argument_fails(bash, tmp_path):
+    root = make_track_repo(tmp_path)
+    r = run_pin(bash, root, "--recrod")
+    assert r.returncode == 64
+    assert "usage:" in r.stderr
+
+
+def test_pins_env_is_parsed_not_executed(bash, tmp_path):
+    root = make_track_repo(tmp_path)
+    run_pin(bash, root, "--record")
+    marker = root / "pwned"
+    pins = root / "track" / "setup" / "pins.env"
+    pins.write_text(f'touch "{marker}"\n' + pins.read_text())
+    r = run_pin(bash, root)
+    assert not marker.exists()
+    assert r.returncode == 0, r.stderr
+
+
+def test_malformed_pin_fails(bash, tmp_path):
+    root = make_track_repo(tmp_path)
+    pins = root / "track" / "setup" / "pins.env"
+    pins.write_text("RPENT_COMMIT=not-a-sha\n")
+    r = run_pin(bash, root)
+    assert r.returncode != 0
+    assert "malformed" in r.stderr
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `.venv-dev/bin/python -m pytest track/tests/test_pin_check.py -v`
-Expected: FAIL/ERROR on all 5 (pin_check.sh missing → `shutil.copy` FileNotFoundError).
+Expected: FAIL/ERROR on all 9 (pin_check.sh missing → `shutil.copy` FileNotFoundError).
 
 - [ ] **Step 3: Write `track/setup/pins.env`**
 
@@ -288,12 +323,16 @@ RPENT_COMMIT=
 ```bash
 #!/usr/bin/env bash
 # Verify (default) or record (--record) the RPent pin.
-# Fails loudly on: missing clone, unset pin, HEAD drift, dirty worktree.
+# Fails loudly on: missing clone, unset pin, HEAD drift, dirty worktree,
+# malformed pins.env, unknown arguments.
 set -euo pipefail
 
 REPO="${TRACK_REPO:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
 PINS="$REPO/track/setup/pins.env"
 RPENT="$REPO/RPent"
+
+usage() { echo "usage: pin_check.sh [--record]" >&2; exit 64; }
+case "${1:-}" in ""|--record) ;; *) usage ;; esac
 
 [ -d "$RPENT/.git" ] || { echo "FATAL: $RPENT is not a git clone; run track/setup/setup.sh rpent" >&2; exit 1; }
 
@@ -302,14 +341,16 @@ dirty="$(git -C "$RPENT" status --porcelain)"
 if [ "${1:-}" = "--record" ]; then
     [ -z "$dirty" ] || { echo "FATAL: refusing to record pin with dirty RPent worktree:" >&2; echo "$dirty" >&2; exit 1; }
     head="$(git -C "$RPENT" rev-parse HEAD)"
-    printf '# Pinned upstream commits. Written by pin_check.sh --record; hand-edits are\n# a behavior-affecting change and require an experiment-registry entry.\nRPENT_COMMIT=%s\n' "$head" > "$PINS"
+    printf '# Pinned upstream commits. Written by pin_check.sh --record; hand-edits are\n# a behavior-affecting change and require an experiment-registry entry.\nRPENT_COMMIT=%s\n' "$head" > "$PINS.tmp"
+    mv "$PINS.tmp" "$PINS"
     echo "recorded RPENT_COMMIT=$head"
     exit 0
 fi
 
-# shellcheck disable=SC1090
-source "$PINS"
-[ -n "${RPENT_COMMIT:-}" ] || { echo "FATAL: RPENT_COMMIT unset in pins.env; run pin_check.sh --record after review" >&2; exit 1; }
+# Parse, never source: pins.env content must not run as code.
+RPENT_COMMIT="$(grep -E '^RPENT_COMMIT=' "$PINS" | tail -1 | cut -d= -f2 || true)"
+[ -n "$RPENT_COMMIT" ] || { echo "FATAL: RPENT_COMMIT unset in pins.env; run pin_check.sh --record after review" >&2; exit 1; }
+echo "$RPENT_COMMIT" | grep -qE '^[0-9a-f]{7,40}$' || { echo "FATAL: RPENT_COMMIT malformed in pins.env: '$RPENT_COMMIT'" >&2; exit 1; }
 head="$(git -C "$RPENT" rev-parse HEAD)"
 [ "$head" = "$RPENT_COMMIT" ] || { echo "FATAL: RPent HEAD $head != pinned $RPENT_COMMIT" >&2; exit 1; }
 [ -z "$dirty" ] || { echo "FATAL: RPent worktree has unrecorded modifications:" >&2; echo "$dirty" >&2; exit 1; }
@@ -321,7 +362,7 @@ Then: `chmod +x track/setup/pin_check.sh`
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `.venv-dev/bin/python -m pytest track/tests/test_pin_check.py -v`
-Expected: 5 PASS
+Expected: 9 PASS
 
 - [ ] **Step 6: Commit**
 
@@ -1480,7 +1521,7 @@ git commit -m "docs: README with quick start, layout, standing rules"
 - [ ] **Step 1: Run the entire test suite**
 
 Run: `.venv-dev/bin/python -m pytest track/tests -v`
-Expected: **44 PASS** (3 track_env + 5 pin_check + 3 key_hygiene + 9 schemas + 6 ledger + 6 disk_guard + 6 manifests + 6 setup). Zero failures, zero errors.
+Expected: **48 PASS** (3 track_env + 9 pin_check + 3 key_hygiene + 9 schemas + 6 ledger + 6 disk_guard + 6 manifests + 6 setup). Zero failures, zero errors.
 
 - [ ] **Step 2: Run the shell scripts through bash -n once more**
 
