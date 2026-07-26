@@ -62,6 +62,7 @@ Rules:
   every overnight queue:
 
   ```bash
+  REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # derived, never hardcoded
   export CUDA_VISIBLE_DEVICES=0            # A6000 only; TITAN X never used
   export PI05_CHECKPOINT_PATH=$REPO/checkpoints/rlinf-pi05-libero-130-fullshot-sft
   export LIBERO_TYPE=pro
