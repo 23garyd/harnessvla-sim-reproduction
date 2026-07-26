@@ -1521,7 +1521,7 @@ case "${1:-all}" in
 esac
 ```
 
-Then: `chmod +x track/setup/setup.sh track/setup/setup_lib.sh`
+Then: `chmod +x track/setup/setup.sh` (setup_lib.sh stays 644 — it is sourced, never executed, matching the track_env.sh convention)
 
 - [ ] **Step 5: Run tests to verify they pass**
 
