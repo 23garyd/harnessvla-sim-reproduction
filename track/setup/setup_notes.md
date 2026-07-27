@@ -121,6 +121,45 @@ complete and paired with harness runs. Remaining direct cells for the core
 matrix: seeds s4,s5 for object_swap/spatial_task and s3,s4,s5 for
 goal_task/goal_swap (10 rollouts).
 
+## Day-4 evening queue (2026-07-27, attended)
+
+**Direct matrix COMPLETE (20/20 scored, ledger 22 rows incl. 2 retained infra):**
+
+| cell | successes | paper anchor (direct) |
+|---|---|---|
+| libero_object_swap_t2 (Object-S) | 4/5 | 78% — matches closely |
+| libero_spatial_task_t2 (Spatial-T) | 0/5 | 42% (single-task cell runs below the 10-task cell average) |
+| libero_goal_task_t2 (Goal-T) | 1/5 | 45% |
+| libero_goal_swap_t2 (Goal-S) | 0/5 | 42% |
+| **aggregate** | **5/20 (25%)** | paper overall direct 50.0% |
+
+Ordering matches the anchors (Object-S >> rest). Our hard cells run below the
+paper's cell averages — expected with one fixed task (t2) per cell vs the
+paper's 10; direction is what the core matrix tests.
+
+**Harness pilots (object_swap t2, held-out seeds s1–s3; PRE-FREEZE exploratory
+— planner claude-opus-4-8, 60-turn cap, settings not yet pinned; these do not
+count as scored matrix rows):**
+
+| seed | outcome | wall | note |
+|---|---|---|---|
+| s1 | failure (993 s) | correct grasp+carry; release-from-height rolled the tall bottle off the rim (same failure mode as the seed-0 first attempt) and no recovery within budget. Direct SUCCEEDED on this seed — retained as an honest anti-example |
+| s2 | success (264 s) | basket at (-0.015, 0.275) — genuinely different from seed-0's (0.077, 0.245); localized live, first-try placement |
+| s3 | success (254 s) | single attempt, no reset |
+
+Mechanism evidence on novel scenes: re-grounding confirmed (s2's shifted
+basket). Failure lesson for Day-5 memory work: the release-from-carry-height
+failure mode recurs — the seed-0 recipe's lesson ("descend below rim before
+release") is in the Day-4 run's OWN written recipe but the released memory
+does not carry it yet; a candidate Task-Specific-Memory improvement to test.
+
+**Ops finding:** the SDK tool runtime resolves relative paths against RPent's
+root; fumbled planner writes land in `RPent/artifacts/` and dirty the pinned
+worktree — the pin gate correctly refused 10 direct rollouts until triaged.
+Queue scripts now sweep `RPent/artifacts` into each run dir
+(`planner_strays/`) after every harness rollout; preserved, never deleted.
+The Day-6 batch runner must include this sweep.
+
 ## Day-5/6 pick-ups (from the Day-3 final review)
 
 - Day 5 (harness freeze): add seed-0 `bootstrap_only: true` entries + harness

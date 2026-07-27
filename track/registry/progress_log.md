@@ -67,6 +67,12 @@ Detailed evidence lives in the files each entry points to.
   ✅, benchmark-predicate terminal ✅.
 - Gate: trace visibly contains planner staging AND retry around the same
   frozen pi0.5. ✅
+- Evening queue: direct matrix COMPLETED 20/20 (5/20 aggregate; Object-S 4/5,
+  hard cells at/near floor — ordering matches anchors) + 3 harness pilots on
+  held-out seeds (2/3 success; s2 proved re-grounding on a shifted basket;
+  s1 failure = recurring release-from-height mode, retained as anti-example).
+  Pin gate caught planner-stray contamination of RPent (10 rollouts refused
+  until triaged); queue scripts now sweep strays into run dirs.
 - Open for Day 5: step-cap regime decision (guides use one-shot 1200 vs our
-  600), planner pin, harness manifest as registry v2; Day-4 evening 3-seed
-  harness queue awaiting go (planner spend).
+  600), planner pin, harness manifest as registry v2, and the
+  release-below-rim memory-improvement hypothesis from the pilot failure.
