@@ -1,0 +1,13 @@
+Seed-mapping verification for core_v1.json
+rule: rid = first_id + (seed % trials)  (env_server.py:90-92)
+
+libero_spatial_task t2: trials=50 seeds=[0, 1, 2, 3, 4, 5] rids=[0, 1, 2, 3, 4, 5] distinct_states=6/6 OK
+    language: Pick the akita black bowl next to the plate and place it on the plate
+libero_goal_task t2: trials=50 seeds=[0, 1, 2, 3, 4, 5] rids=[0, 1, 2, 3, 4, 5] distinct_states=6/6 OK
+    language: put the wine bottle in the bowl
+libero_goal_swap t2: trials=50 seeds=[0, 1, 2, 3, 4, 5] rids=[0, 1, 2, 3, 4, 5] distinct_states=6/6 OK
+    language: Put the wine bottle on the top of the drawer
+libero_object_swap t2: trials=50 seeds=[0, 1, 2, 3, 4, 5] rids=[0, 1, 2, 3, 4, 5] distinct_states=6/6 OK
+    language: Pick the salad dressing and place it in the basket
+
+RESULT: all distinct
