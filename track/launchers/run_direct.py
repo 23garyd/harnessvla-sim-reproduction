@@ -95,6 +95,8 @@ def main(argv=None):
     direct_lib.select_cell(manifest, args.suite, args.task_id, args.seed)
     budgets = manifest["budgets"]
 
+    # Pin/sha reads happen BEFORE run-dir creation: a failure here must not
+    # leave an orphaned empty run dir behind.
     rpent_commit = direct_lib.read_rpent_pin(REPO / "track/setup/pins.env")
     checkpoint_sha = direct_lib.read_checkpoint_sha(
         REPO / "track/setup/checkpoint.sha256sums")
@@ -114,7 +116,7 @@ def main(argv=None):
     steps = chunks = 0
     success = False
     validity, reason, evidence = "infra_failure", "exception", None
-    t0 = time.monotonic()
+    t0 = time.monotonic()  # durations must survive a backward NTP step
     try:
         vla = VLAClient(HttpRpcClient(args.vla_endpoint))
         vla.healthz()
