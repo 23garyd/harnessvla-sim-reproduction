@@ -121,8 +121,13 @@ def main(argv=None):
         vla = VLAClient(HttpRpcClient(args.vla_endpoint))
         vla.healthz()
 
+        # Env horizon gets +20 slack over the scoring budget: LiberoEnv's reset
+        # burns 15 settle steps of robosuite's internal horizon counter, so an
+        # equal horizon makes robosuite flag done at driver-step 585 and the
+        # next chunk_step crashes ("executing action in terminated episode").
+        # Scoring still stops at budgets["max_steps"] in our loop below.
         proc, log = spawn_env_server(args.suite, args.task_id, args.seed,
-                                     budgets["max_steps"], args.env_port,
+                                     budgets["max_steps"] + 20, args.env_port,
                                      run_dir / "env_server.log")
         env = HttpRpcClient(f"http://127.0.0.1:{args.env_port}")
         wait_for_ready(env, timeout_s=600)
