@@ -101,6 +101,26 @@ infra_failure), 0 seed-0 excluded, 0 incomplete. vla_server shut down cleanly
 via the plan's `pkill` line after the audit; GPU 0 (A6000) confirmed back to
 idle (15 MiB).
 
+## Day-3 evening direct queue (2026-07-27, attended)
+
+The plan's Day-3 unattended slot (4 core cells x 2 further held-out seeds),
+run attended after the supervised pilot passed. 8/8 rollouts valid, 0
+infra_failure, ~11 min wall including one VLA boot. Direct-baseline ledger now
+holds 10 scored rollouts (+ the 2 retained pre-fix infra rows):
+
+| cell | scored seeds | successes | anchor (paper direct) |
+|---|---|---|---|
+| libero_object_swap_t2 (Object-S) | s1,s2,s3 | 3/3 | 78% — already-strong cell, matches |
+| libero_spatial_task_t2 (Spatial-T) | s1,s2,s3 | 0/3 | 42% — weakest direct cell, matches |
+| libero_goal_task_t2 (Goal-T) | s1,s2 | 1/2 | 45% |
+| libero_goal_swap_t2 (Goal-S) | s1,s2 | 0/2 | 42% |
+
+Aggregate 4/10 (small-n; the paper's overall direct rate is 50.0%). Direction
+is consistent with the anchor table; no conclusions drawn until the matrix is
+complete and paired with harness runs. Remaining direct cells for the core
+matrix: seeds s4,s5 for object_swap/spatial_task and s3,s4,s5 for
+goal_task/goal_swap (10 rollouts).
+
 ## Day-5/6 pick-ups (from the Day-3 final review)
 
 - Day 5 (harness freeze): add seed-0 `bootstrap_only: true` entries + harness
