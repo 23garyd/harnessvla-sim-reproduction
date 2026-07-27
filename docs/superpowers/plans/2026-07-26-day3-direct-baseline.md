@@ -312,6 +312,17 @@ def test_select_cell_rejects_unknown_cell():
         direct_lib.select_cell(valid_cell_manifest(), "libero_spatial_task", 2, 1)
 
 
+def test_resolve_outcome_success_wins_over_caps():
+    # Predicate fired on the exact step the cap was reached: success wins.
+    assert direct_lib.resolve_outcome(True, 600, 600, 1800.0, 1800) == \
+        ("success", "benchmark_predicate")
+
+
+def test_resolve_outcome_wall_boundary_exact():
+    assert direct_lib.resolve_outcome(False, 42, 600, 1800.0, 1800) == \
+        ("budget_exhausted", "wall_time")
+
+
 def test_core_v1_manifest_frozen():
     from track.analysis.manifests import load_manifest
     from track.tests.conftest import REPO
@@ -332,7 +343,7 @@ def test_core_v1_manifest_frozen():
 
 - [ ] **Step 2: Run to verify the manifest test fails** (select_cell tests pass already — they exercise Task 1 code):
 Run: `PYTHONPATH= .venv-dev/bin/python -m pytest track/tests/test_direct_lib.py -v`
-Expected: `test_core_v1_manifest_frozen` FAILS (file missing); other 12 PASS.
+Expected: `test_core_v1_manifest_frozen` FAILS (file missing); other 14 PASS.
 
 - [ ] **Step 3: Write `track/manifests/core_v1.json`:**
 
@@ -385,7 +396,7 @@ behavior-affecting change → new registry version).
 
 - [ ] **Step 4: Run tests to verify they pass.**
 Run: `PYTHONPATH= .venv-dev/bin/python -m pytest track/tests/test_direct_lib.py -v`
-Expected: 13 PASS
+Expected: 15 PASS
 
 - [ ] **Step 5: Remove placeholder and commit**
 
@@ -689,7 +700,7 @@ Expected: `COMPILE-OK`, `AST-OK`.
 
 - [ ] **Step 3: Full dev suite still green:**
 Run: `PYTHONPATH= .venv-dev/bin/python -m pytest track/tests -q`
-Expected: 77 passed (64 prior + 13 direct_lib).
+Expected: 79 passed (64 prior + 15 direct_lib).
 
 - [ ] **Step 4: Commit**
 
@@ -841,7 +852,7 @@ git commit -m "docs: Day-3 gate evidence - two valid supervised direct rollouts"
 
 ### Task 7: Wrap-up — merge and tag
 
-- [ ] **Step 1:** Full dev suite: `PYTHONPATH= .venv-dev/bin/python -m pytest track/tests -q` → 77 passed.
+- [ ] **Step 1:** Full dev suite: `PYTHONPATH= .venv-dev/bin/python -m pytest track/tests -q` → 79 passed.
 - [ ] **Step 2:** `git checkout main && git merge day3-direct-baseline --no-edit && git push origin main`
 - [ ] **Step 3:** Tag: `git tag -a day3-baseline-frozen -m "Day 3: core matrix v1 frozen, direct baseline validated (2 supervised rollouts)" && git push origin day3-baseline-frozen`
 
