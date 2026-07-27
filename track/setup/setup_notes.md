@@ -96,6 +96,22 @@ Frame evidence (`frame_first.png`/`frame_last.png` in each run dir):
   (non-infra) failure to trigger the predicate within budget.
 
 Ledger rebuilt via `python -m track.analysis.build_ledger --runs-root
-artifacts/runs --out artifacts/ledger.csv`: 4 scored rows, 0 seed-0 excluded,
-0 incomplete. vla_server shut down cleanly via the plan's `pkill` line after
-the audit; GPU 0 (A6000) confirmed back to idle (15 MiB).
+artifacts/runs --out artifacts/ledger.csv`: 4 rows (2 gating + 2 retained
+infra_failure), 0 seed-0 excluded, 0 incomplete. vla_server shut down cleanly
+via the plan's `pkill` line after the audit; GPU 0 (A6000) confirmed back to
+idle (15 MiB).
+
+## Day-5/6 pick-ups (from the Day-3 final review)
+
+- Day 5 (harness freeze): add seed-0 `bootstrap_only: true` entries + harness
+  cells in a new registry version; make `direct_lib.select_cell`
+  condition-aware (it currently matches on suite+task_id only); record any
+  strict-regime step-cap delta in the deviation table.
+- Day 6 (batch runner): append `RpcError.server_traceback` to infra-row
+  evidence and capture a per-run vla_server log slice (row-level evidence is
+  currently thin for RPC-side failures); ledger aggregation must filter
+  infra_failure and dedupe multi-attempt cells (object_swap_t2/1 now has an
+  infra row AND a success row — both retained by design); implement the
+  infra-only retry policy (cap 2); note build_ledger's "scored rows" print
+  wording includes infra rows (fix when next touched); steps can overshoot
+  max_steps by up to chunk-1 if a future cap isn't divisible by 5.
