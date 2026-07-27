@@ -92,7 +92,8 @@ def main(argv=None):
     if not ok:
         sys.exit(f"FATAL: artifacts disk budget exceeded (used={used})")
     manifest = load_manifest(args.manifest)
-    direct_lib.select_cell(manifest, args.suite, args.task_id, args.seed)
+    direct_lib.select_cell(manifest, args.suite, args.task_id, args.seed,
+                           condition=direct_lib.CONDITION)
     budgets = manifest["budgets"]
 
     # Pin/sha reads happen BEFORE run-dir creation: a failure here must not

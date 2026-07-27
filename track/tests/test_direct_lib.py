@@ -154,3 +154,31 @@ def test_core_v1_manifest_frozen():
     assert all(seed in (1, 2, 3, 4, 5) for _, _, _, seed in cells)
     for c in m["cells"]:
         assert c["task"] == direct_lib.task_key(c["suite"], c["task_id"])
+
+
+def two_condition_manifest():
+    m = valid_cell_manifest()
+    m["cells"].append({
+        "condition": "harness", "suite": "libero_goal_swap",
+        "task": "libero_goal_swap_t2", "task_id": 2,
+        "seeds": [{"seed": 0, "bootstrap_only": True},
+                  {"seed": 1, "bootstrap_only": False}],
+    })
+    return m
+
+
+def test_select_cell_is_condition_aware():
+    m = two_condition_manifest()
+    direct = direct_lib.select_cell(m, "libero_goal_swap", 2, 1,
+                                    condition="direct")
+    harness = direct_lib.select_cell(m, "libero_goal_swap", 2, 1,
+                                     condition="harness")
+    assert direct["condition"] == "direct"
+    assert harness["condition"] == "harness"
+
+
+def test_select_cell_rejects_wrong_condition():
+    m = valid_cell_manifest()  # direct-only manifest
+    with pytest.raises(ValueError, match="not in the frozen manifest"):
+        direct_lib.select_cell(m, "libero_goal_swap", 2, 1,
+                               condition="harness")

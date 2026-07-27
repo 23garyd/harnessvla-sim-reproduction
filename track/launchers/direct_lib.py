@@ -88,11 +88,12 @@ def read_checkpoint_sha(sums_file):
     raise ValueError(f"{sums_file}: no model.safetensors line")
 
 
-def select_cell(manifest, suite, task_id, seed):
-    """Freeze enforcement: refuse any (suite, task, seed) not scored in the
-    frozen manifest. Bootstrap-only seeds are never scored."""
+def select_cell(manifest, suite, task_id, seed, condition=CONDITION):
+    """Freeze enforcement: refuse any (condition, suite, task, seed) not
+    scored in the frozen manifest. Bootstrap-only seeds are never scored."""
     for cell in manifest["cells"]:
-        if cell["suite"] == suite and cell.get("task_id") == task_id:
+        if (cell["condition"] == condition and cell["suite"] == suite
+                and cell.get("task_id") == task_id):
             for entry in cell["seeds"]:
                 if entry["seed"] == seed:
                     if entry["bootstrap_only"]:
@@ -102,7 +103,8 @@ def select_cell(manifest, suite, task_id, seed):
                     return cell
             raise ValueError(
                 f"seed {seed} not in the frozen manifest for {suite} t{task_id}")
-    raise ValueError(f"cell ({suite}, t{task_id}) not in the frozen manifest")
+    raise ValueError(
+        f"cell ({condition}, {suite}, t{task_id}) not in the frozen manifest")
 
 
 def save_png(arr, path):
