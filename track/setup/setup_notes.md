@@ -160,6 +160,37 @@ Queue scripts now sweep `RPent/artifacts` into each run dir
 (`planner_strays/`) after every harness rollout; preserved, never deleted.
 The Day-6 batch runner must include this sweep.
 
+## Day-5 memory validation + protocol freeze (2026-07-27)
+
+**Memory audit** (`track/registry/memory_audit.md`): released Task-Specific
+Memory confirmed as a structural prior — all four runs (released s0, pilots
+s1–s3) share the approach→pi0_pick→carry→release skeleton with re-derived
+spatial bindings; coordinate-leakage grep clean in s2/s3 (s1 has one literal
+in reasoning prose only, never executed); s2 re-grounded a genuinely shifted
+basket. Honest caveats: s1 copied its carry binding instead of re-measuring
+(root cause of its failure), and the "descend below rim before release"
+lesson — already self-discovered in the Day-4 s0 run — is absent from the
+released notes (candidate TSM addition; hypothesis only, not applied).
+
+**No-memory diagnostic**: object_swap t2 s2 with memory stashed
+(HF_HUB_OFFLINE=1, dirs restored by trap; pin clean afterwards) → SUCCESS in
+223 s. Mechanically validates the hidden-memory condition (nothing readable,
+no leaks); scientifically consistent with the paper — Object-S is the cell
+where the frozen VLA is already strong; the predicted swap-cell asymmetry is
+Day-12's full ablation.
+
+**Protocol freeze (mentor-approved, registry v2):** harness condition added on
+the same 4 cells/seeds (`track/manifests/harness_v2.json`, seed 0
+bootstrap_only + s1–s5); released one-shot regime as-is — guide cell budget
+1200 steps, env backstop `--max-episode-steps 1220`; planner pinned
+claude_code/claude-opus-4-8, 60 turns, keys stripped; wall cap 2400 s. Budget
+asymmetry vs direct (600) documented as deviation row 3. Direct rows scored
+under v1 carry forward as the paired direct arm (nothing behavior-affecting
+changed for that condition).
+
+**Day-5 gate:** one harness rollout valid end to end ✅ (four now), memory
+used without coordinate replay ✅ (audit), scoring rules frozen ✅ (v2). PASSED.
+
 ## Day-5/6 pick-ups (from the Day-3 final review)
 
 - Day 5 (harness freeze): add seed-0 `bootstrap_only: true` entries + harness

@@ -138,6 +138,22 @@ def test_resolve_outcome_wall_boundary_exact():
         ("budget_exhausted", "wall_time")
 
 
+def test_harness_v2_manifest_frozen():
+    from track.analysis.manifests import load_manifest, scored_cells
+    from track.tests.conftest import REPO
+    m = load_manifest(REPO / "track" / "manifests" / "harness_v2.json")
+    assert m["exp_version"] == "v2"
+    assert m["budgets"] == {"max_steps": 1200, "max_turns": 60,
+                            "max_wall_seconds": 2400}
+    assert len(m["cells"]) == 4
+    for c in m["cells"]:
+        assert c["condition"] == "harness"
+        seeds = {e["seed"]: e["bootstrap_only"] for e in c["seeds"]}
+        assert seeds[0] is True  # seed 0 present and bootstrap-only
+        assert all(seeds[s] is False for s in (1, 2, 3, 4, 5))
+    assert len(scored_cells(m)) == 20
+
+
 def test_core_v1_manifest_frozen():
     from track.analysis.manifests import load_manifest
     from track.tests.conftest import REPO

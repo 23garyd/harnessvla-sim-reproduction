@@ -76,3 +76,23 @@ Detailed evidence lives in the files each entry points to.
 - Open for Day 5: step-cap regime decision (guides use one-shot 1200 vs our
   600), planner pin, harness manifest as registry v2, and the
   release-below-rim memory-improvement hypothesis from the pilot failure.
+
+## Day 5 — memory validation & Week-1 protocol freeze (2026-07-27)
+
+- Memory audit (`track/registry/memory_audit.md`): released TSM = structural
+  prior with live re-grounding confirmed (identical skeleton, re-derived
+  bindings, leakage grep clean); honest caveats recorded (s1's copied carry
+  binding; the below-rim lesson missing from released notes — candidate TSM
+  addition, not applied).
+- No-memory diagnostic: hidden-memory condition works leak-free; object_swap
+  s2 succeeded without memory (223 s) — consistent with Object-S being the
+  strong cell; swap-asymmetry test deferred to the Day-12 ablation proper.
+- Protocol frozen as registry v2 (mentor-approved): harness cells added
+  (harness_v2.json; seed-0 bootstrap entries), released one-shot regime as-is
+  (1200 guide budget, env backstop 1220), planner pinned
+  claude-opus-4-8/60 turns; budget asymmetry vs direct 600 = deviation row 3;
+  v1 direct rows carry forward as the paired arm. select_cell made
+  condition-aware (82 tests green).
+- Gate: harness rollout valid end-to-end ✅, memory without coordinate
+  replay ✅, scoring rules frozen ✅. PASSED — cleared for the Day-6–10
+  paired matrix.
