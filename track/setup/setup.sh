@@ -72,6 +72,23 @@ fetch_sim_assets() {
     "$REPO/.venv/bin/liberopro-download-assets" --skip-existing
 }
 
+fetch_sam3() {
+    # SAM3 perception checkpoint (harness localization; RPent README step 3).
+    # Only sam3.pt is needed — sam3_server loads it with load_from_HF=False.
+    local dir="$REPO/checkpoints/sam3" sums="$REPO/track/setup/sam3.sha256sums"
+    mkdir -p "$REPO/checkpoints"
+    if [ ! -d "$dir" ]; then
+        [ -f "$HOME/huggingface.txt" ] || { echo "FATAL: HF token file missing at $HOME/huggingface.txt" >&2; return 1; }
+        rm -rf "$dir.partial"
+        HF_TOKEN="$(cat "$HOME/huggingface.txt")" \
+            "$REPO/.venv/bin/huggingface-cli" download facebook/sam3 sam3.pt \
+            --repo-type model --local-dir "$dir.partial"
+        rm -rf "$dir.partial/.cache"
+        mv "$dir.partial" "$dir"
+    fi
+    verify_checkpoint "$dir" "$sums"
+}
+
 freeze_requirements() {
     # Run once, after the Day-2 smoke tests pass (spec section 2).
     "$REPO/.venv/bin/pip" freeze > "$REPO/track/setup/requirements.lock"
@@ -84,7 +101,8 @@ case "${1:-all}" in
     venv)       make_venv ;;
     assets)     fetch_sim_assets ;;
     checkpoint) fetch_checkpoint ;;
+    sam3)       fetch_sam3 ;;
     freeze)     freeze_requirements ;;
-    all)        assert_gpu; clone_rpent; make_venv; fetch_sim_assets; fetch_checkpoint ;;
-    *) echo "usage: setup.sh [check|rpent|venv|assets|checkpoint|freeze|all]" >&2; exit 64 ;;
+    all)        assert_gpu; clone_rpent; make_venv; fetch_sim_assets; fetch_checkpoint; fetch_sam3 ;;
+    *) echo "usage: setup.sh [check|rpent|venv|assets|checkpoint|sam3|freeze|all]" >&2; exit 64 ;;
 esac

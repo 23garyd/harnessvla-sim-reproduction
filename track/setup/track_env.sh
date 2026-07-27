@@ -7,5 +7,6 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"   # derived, never ha
 
 export CUDA_VISIBLE_DEVICES=0            # A6000 only; TITAN X never used
 export PI05_CHECKPOINT_PATH="$REPO/checkpoints/rlinf-pi05-libero-130-fullshot-sft"
+export SAM3_CHECKPOINT_PATH="$REPO/checkpoints/sam3/sam3.pt"
 export LIBERO_TYPE=pro
 export MUJOCO_GL=egl

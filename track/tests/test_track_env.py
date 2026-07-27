@@ -6,14 +6,16 @@ ENV = REPO / "track" / "setup" / "track_env.sh"
 def test_track_env_exports(bash):
     r = bash(
         f'source "{ENV}" && '
-        'echo "$CUDA_VISIBLE_DEVICES|$LIBERO_TYPE|$MUJOCO_GL|$PI05_CHECKPOINT_PATH"'
+        'echo "$CUDA_VISIBLE_DEVICES|$LIBERO_TYPE|$MUJOCO_GL|$PI05_CHECKPOINT_PATH'
+        '|$SAM3_CHECKPOINT_PATH"'
     )
     assert r.returncode == 0, r.stderr
-    cuda, libero, mujoco, ckpt = r.stdout.strip().split("|")
+    cuda, libero, mujoco, ckpt, sam3 = r.stdout.strip().split("|")
     assert cuda == "0"
     assert libero == "pro"
     assert mujoco == "egl"
     assert ckpt == str(REPO / "checkpoints" / "rlinf-pi05-libero-130-fullshot-sft")
+    assert sam3 == str(REPO / "checkpoints" / "sam3" / "sam3.pt")
 
 
 def test_track_env_repo_derived_from_location(bash):
