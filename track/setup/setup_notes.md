@@ -52,3 +52,50 @@ fresh start does not repeat them.
 - env_server boot: ~4 s; reset: seconds; render 256²: <1 s
 - vla_server boot incl. model load: ~130–140 s (budget queue restarts accordingly)
 - vla inference: ~0.5 s warm (~2 s first call)
+
+## Day-3 gate (2026-07-26)
+
+Two supervised `run_direct.py` rollouts, both exit 0 / non-`infra_failure`,
+gating the direct frozen-VLA baseline (`track/manifests/core_v1.json`, HEAD
+`0543d1d`). vla_server boot: `RPC server listening` at ~120 s (model ready in
+110.6 s) — booting it requires `source track/setup/track_env.sh` first
+(exports `PI05_CHECKPOINT_PATH`; the Task-6 plan snippet now says so
+explicitly).
+
+**Retained infra failures (evidence, not part of the gate):** the first
+attempt at this gate hit an env-horizon bug — `LiberoEnv.reset` burns 15
+zero-action settle steps of robosuite's internal horizon counter, so a
+`--max-episode-steps` equal to the 600-step scoring budget made robosuite
+flag `done` at driver-step 585 while the wire's `truncated` flag stayed
+`False`; the next `env.chunk_step` call then crashed with `ValueError:
+executing action in terminated episode`. Both cells failed identically
+(585 steps, 118 chunks, ~110 s) — reproducible, not a flake. Fixed in
+`696c12a` (env horizon = `max_steps + 20`; scoring budget unchanged at 600).
+Per protocol these `infra_failure` rows are retained with evidence rather
+than deleted; they remain in `artifacts/ledger.csv` (4 rows total: 2
+`infra_failure` + the 2 gating rows below):
+- `libero_object_swap_t2` seed 1, run `20260727T043506`: infra_failure/exception, 585 steps, 111.0 s
+- `libero_spatial_task_t2` seed 1, run `20260727T043737`: infra_failure/exception, 585 steps, 110.3 s
+
+**Gating rollouts (post-fix, HEAD `0543d1d`):**
+
+| suite | seed | validity | terminal_reason | steps | wall_seconds | run dir |
+|---|---|---|---|---|---|---|
+| libero_object_swap_t2 | 1 | success | benchmark_predicate | 143 | 38.6 | `artifacts/runs/v1/direct/libero_object_swap_t2/1/20260727T044536` |
+| libero_spatial_task_t2 | 1 | budget_exhausted | step_budget | 600 | 110.8 | `artifacts/runs/v1/direct/libero_spatial_task_t2/1/20260727T044619` |
+
+Frame evidence (`frame_first.png`/`frame_last.png` in each run dir):
+- object_swap (success): first frame shows a wire basket + several canned/
+  bottled objects on a table with the gripper raised open; last frame shows
+  the gripper descended, closed, and positioned directly at the basket —
+  consistent with the benchmark predicate firing on a successful place.
+- spatial_task (budget_exhausted): first frame shows three bowls, a plate, a
+  box, and a drawer unit with the gripper raised; last frame shows the
+  gripper lowered near two bowls that are now adjacent, but no object reaches
+  a distinct goal location by step 600 — consistent with a genuine
+  (non-infra) failure to trigger the predicate within budget.
+
+Ledger rebuilt via `python -m track.analysis.build_ledger --runs-root
+artifacts/runs --out artifacts/ledger.csv`: 4 scored rows, 0 seed-0 excluded,
+0 incomplete. vla_server shut down cleanly via the plan's `pkill` line after
+the audit; GPU 0 (A6000) confirmed back to idle (15 MiB).
