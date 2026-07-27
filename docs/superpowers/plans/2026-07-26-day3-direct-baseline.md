@@ -604,6 +604,12 @@ def main(argv=None):
     direct_lib.select_cell(manifest, args.suite, args.task_id, args.seed)
     budgets = manifest["budgets"]
 
+    # Pin/sha reads happen BEFORE run-dir creation: a failure here must not
+    # leave an orphaned empty run dir behind.
+    rpent_commit = direct_lib.read_rpent_pin(REPO / "track/setup/pins.env")
+    checkpoint_sha = direct_lib.read_checkpoint_sha(
+        REPO / "track/setup/checkpoint.sha256sums")
+
     ts = time.strftime("%Y%m%dT%H%M%S", time.gmtime())
     run_dir = direct_lib.make_run_dir(
         Path(args.out_root), manifest["exp_version"], direct_lib.CONDITION,
@@ -611,9 +617,7 @@ def main(argv=None):
     meta = direct_lib.build_run_meta(
         exp_version=manifest["exp_version"], suite=args.suite,
         task_id=args.task_id, seed=args.seed, budgets=budgets,
-        rpent_commit=direct_lib.read_rpent_pin(REPO / "track/setup/pins.env"),
-        checkpoint_sha256=direct_lib.read_checkpoint_sha(
-            REPO / "track/setup/checkpoint.sha256sums"),
+        rpent_commit=rpent_commit, checkpoint_sha256=checkpoint_sha,
         launch_command=" ".join(sys.argv))
     (run_dir / "run_meta.json").write_text(json.dumps(meta, indent=2))
 
@@ -621,7 +625,7 @@ def main(argv=None):
     steps = chunks = 0
     success = False
     validity, reason, evidence = "infra_failure", "exception", None
-    t0 = time.time()
+    t0 = time.monotonic()  # durations must survive a backward NTP step
     try:
         vla = VLAClient(HttpRpcClient(args.vla_endpoint))
         vla.healthz()
@@ -636,7 +640,7 @@ def main(argv=None):
         direct_lib.save_png(obs["main_images"], run_dir / "frame_first.png")
 
         while (steps < budgets["max_steps"]
-               and time.time() - t0 < budgets["max_wall_seconds"]):
+               and time.monotonic() - t0 < budgets["max_wall_seconds"]):
             actions, _ = vla.predict_action_batch(
                 build_env_obs(obs, instruction), mode="eval")
             chunks += 1
@@ -657,7 +661,7 @@ def main(argv=None):
         direct_lib.save_png(obs["main_images"], run_dir / "frame_last.png")
         validity, reason = direct_lib.resolve_outcome(
             success, steps, budgets["max_steps"],
-            time.time() - t0, budgets["max_wall_seconds"])
+            time.monotonic() - t0, budgets["max_wall_seconds"])
         evidence = None
     except Exception:
         success = False
@@ -673,13 +677,16 @@ def main(argv=None):
             try:
                 proc.wait(timeout=30)  # -6 after clean shutdown is known-OK
             except subprocess.TimeoutExpired:
-                proc.kill()
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
         if log is not None:
             log.close()
         row = direct_lib.build_result_row(
             success=success, validity=validity, terminal_reason=reason,
             steps=steps, chunks=chunks,
-            wall_s=round(time.time() - t0, 1), evidence=evidence)
+            wall_s=round(time.monotonic() - t0, 1), evidence=evidence)
         (run_dir / "result_row.json").write_text(json.dumps(row, indent=2))
         print(json.dumps({"run_dir": str(run_dir), **row}, indent=2))
     return 0 if validity != "infra_failure" else 1
