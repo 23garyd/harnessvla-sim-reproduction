@@ -87,6 +87,18 @@ fetch_sam3() {
         mv "$dir.partial" "$dir"
     fi
     verify_checkpoint "$dir" "$sums"
+    # The sam3 pip wheel omits its repo-root assets/ dir, but the text encoder
+    # hardcodes <site-packages>/assets/bpe_simple_vocab_16e6.txt.gz (the
+    # canonical CLIP BPE vocab). Fetch and pin it (sha recorded 2026-07-27).
+    local bpe="$REPO/.venv/lib/python3.10/site-packages/assets/bpe_simple_vocab_16e6.txt.gz"
+    local bpe_sha="924691ac288e54409236115652ad4aa250f48203de50a9e4722a6ecd48d6804a"
+    if [ ! -f "$bpe" ]; then
+        mkdir -p "$(dirname "$bpe")"
+        curl -fsSL -o "$bpe.partial" https://github.com/openai/CLIP/raw/main/clip/bpe_simple_vocab_16e6.txt.gz
+        mv "$bpe.partial" "$bpe"
+    fi
+    echo "$bpe_sha  $bpe" | sha256sum --check --quiet || { echo "FATAL: BPE vocab sha mismatch at $bpe" >&2; return 1; }
+    echo "sam3 BPE vocab OK"
 }
 
 freeze_requirements() {
