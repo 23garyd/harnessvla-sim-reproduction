@@ -135,3 +135,44 @@ goal_task/goal_swap (10 rollouts).
   infra-only retry policy (cap 2); note build_ledger's "scored rows" print
   wording includes infra rows (fix when next touched); steps can overshoot
   max_steps by up to chunk-1 if a future cap isn't divisible by 5.
+
+## Day-4 gate (2026-07-27)
+
+**Rollout:** `libero_object_swap` task 2, seed 0 ("Pick the salad dressing and
+place it in the basket") — harness-mode rollout via the full Claude-planner
+loop (not the direct frozen-VLA baseline). Outcome **success**,
+`libero_terminated: true`, wall time 437.0 s (SDK-reported) / 439.8 s
+(harness-reported). Planner: `claude-opus-4-8` via the `claude_code` backend
+(Claude Agent SDK), invoked under the team's key-stripped Claude subscription
+billing (no metered API key), with an advisory **$10 SDK budget cap** per
+episode (`run.log`: "budget=$10.0") — advisory in that the harness logs/warns
+against it but subscription billing means there is no hard metered cutoff.
+33/60 planner turns used, 51 tool calls. Run dir (gitignored):
+`artifacts/harness/day4_object_swap_t2_s0_r2/`.
+
+**Day-4 gate statement:** "the trace visibly contains planner staging AND
+retry around the same frozen pi0.5" — **PASSED**. Cite
+`track/traces/day4_object_swap_t2_s0_annotated.md`: staging is visible at
+turns 9, 13, 18, 23, 26, 28, 30 (`move_to`/`set_gripper` legs sequencing the
+approach → grasp-verify → carry → descend → release skeleton); retry is
+visible at turns 15-20 (failed-release recovery: the tall bottle tipped over
+the basket rim on the first `release`, the planner re-localized the fallen
+object and re-staged a second grasp) and again at turns 20-26 (an empty
+`pi0_pick` grasp on the same frozen Pi0.5 checkpoint was diagnosed from
+wrist-camera evidence and recovered with an analytic `set_gripper` fallback,
+never a policy swap or reset). Both recoveries happened around the *same*
+frozen `pi0.5` policy invoked via `pi0_pick` in turns 11 and 20 — no
+retraining, no reset (0 reset invocations, confirmed in the trace's Audit 2).
+
+**SAM3 BPE wheel bug (already fixed):** the `sam3` pip wheel omits its
+repo-root `assets/` directory, but the packaged text encoder hardcodes
+`<site-packages>/assets/bpe_simple_vocab_16e6.txt.gz` (the canonical CLIP BPE
+vocab) and fails to load without it. Fixed in `track/setup/setup.sh`
+(`fetch_sam3`, one line): fetch the vocab file from
+`https://github.com/openai/CLIP/raw/main/clip/bpe_simple_vocab_16e6.txt.gz`
+into that path and verify its sha256
+(`924691ac288e54409236115652ad4aa250f48203de50a9e4722a6ecd48d6804a`) before
+letting `sam3_server` start.
+
+**Pointers:** run dir `artifacts/harness/day4_object_swap_t2_s0_r2/`; trace +
+audits `track/traces/day4_object_swap_t2_s0_annotated.md`.
