@@ -16,7 +16,7 @@ run_meta/result_row artifacts with full budget control.
 | Checkpoint | RLinf-Pi05-LIBERO-130-fullshot-SFT, sha256 4d9089c9... (model.safetensors) | identical (frozen, never fine-tuned) |
 | Cameras | env defaults: agentview `main_images` 256x256 + wrist 256x256, both fed to pi0.5 | identical (env_server init_params) |
 | Action chunking | model-native 5-step chunks (`pi05_libero`, action_dim 7); every chunk executed in full unless the predicate fires mid-chunk | identical model config |
-| Step cap | 600 env steps (benchmark horizon) | shared where shared: harness scored runs use the strict regime; any step-cap difference is recorded at the Day-5 freeze |
+| Step cap | 600 env steps scored by the driver; the env's internal horizon runs at 620 (+20 slack because LiberoEnv's reset burns 15 settle steps of robosuite's horizon counter — see run_direct.py; discovered Day 3 when equal horizons crashed at step 585) | shared where shared: harness scored runs use the strict regime; any step-cap difference is recorded at the Day-5 freeze |
 | Wall cap | 1800 s per rollout | same for harness |
 | Instruction | full `env.get_task_language()` string every predict call | harness composes its own vla_act prompts (by design) |
 | Scoring | success iff `terminated` (benchmark predicate) fires before budgets; vla stop-predicates/self-reports never score | identical rule |
