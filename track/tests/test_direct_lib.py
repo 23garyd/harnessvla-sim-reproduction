@@ -91,3 +91,66 @@ def test_build_run_meta_ledger_round_trip(tmp_path):
     assert rows[0]["seed"] == 3
     assert rows[0]["condition"] == "direct"
     assert rows[0]["vla_act_calls"] == 9
+
+
+def valid_cell_manifest():
+    return {
+        "exp_version": "v1",
+        "budgets": {"max_steps": 600, "max_turns": 0, "max_wall_seconds": 1800},
+        "caps": {"max_rollouts": 24, "max_tokens_per_rollout": 0},
+        "cells": [
+            {"condition": "direct", "suite": "libero_goal_swap",
+             "task": "libero_goal_swap_t2", "task_id": 2,
+             "seeds": [{"seed": 0, "bootstrap_only": True},
+                       {"seed": 1, "bootstrap_only": False}]},
+        ],
+    }
+
+
+def test_select_cell_ok():
+    cell = direct_lib.select_cell(valid_cell_manifest(), "libero_goal_swap", 2, 1)
+    assert cell["task"] == "libero_goal_swap_t2"
+
+
+def test_select_cell_rejects_bootstrap_seed():
+    with pytest.raises(ValueError, match="bootstrap_only"):
+        direct_lib.select_cell(valid_cell_manifest(), "libero_goal_swap", 2, 0)
+
+
+def test_select_cell_rejects_unfrozen_seed():
+    with pytest.raises(ValueError, match="not in the frozen manifest"):
+        direct_lib.select_cell(valid_cell_manifest(), "libero_goal_swap", 2, 9)
+
+
+def test_select_cell_rejects_unknown_cell():
+    with pytest.raises(ValueError, match="not in the frozen manifest"):
+        direct_lib.select_cell(valid_cell_manifest(), "libero_spatial_task", 2, 1)
+
+
+def test_resolve_outcome_success_wins_over_caps():
+    # Predicate fired on the exact step the cap was reached: success wins.
+    assert direct_lib.resolve_outcome(True, 600, 600, 1800.0, 1800) == \
+        ("success", "benchmark_predicate")
+
+
+def test_resolve_outcome_wall_boundary_exact():
+    assert direct_lib.resolve_outcome(False, 42, 600, 1800.0, 1800) == \
+        ("budget_exhausted", "wall_time")
+
+
+def test_core_v1_manifest_frozen():
+    from track.analysis.manifests import load_manifest
+    from track.tests.conftest import REPO
+    m = load_manifest(REPO / "track" / "manifests" / "core_v1.json")
+    assert m["exp_version"] == "v1"
+    assert m["budgets"] == {"max_steps": 600, "max_turns": 0,
+                            "max_wall_seconds": 1800}
+    suites = sorted(c["suite"] for c in m["cells"])
+    assert suites == ["libero_goal_swap", "libero_goal_task",
+                      "libero_object_swap", "libero_spatial_task"]
+    from track.analysis.manifests import scored_cells
+    cells = scored_cells(m)
+    assert len(cells) == 20  # 4 suites x seeds 1-5
+    assert all(seed in (1, 2, 3, 4, 5) for _, _, _, seed in cells)
+    for c in m["cells"]:
+        assert c["task"] == direct_lib.task_key(c["suite"], c["task_id"])
