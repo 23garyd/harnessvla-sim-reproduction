@@ -20,3 +20,5 @@ change (plan section 2, "Claude Code + superpowers working model").
 | 2026-07-26 | Initial track scaffolding (this repo structure, scripts, schemas, tests) | track/ | pending mentor review |
 | 2026-07-26 | setup.sh Day-2 fixes: model-repo checkpoint, assets stage, lerobot git pin, hf-cache cleanup | track/setup/setup.sh | pending mentor review |
 | 2026-07-26 | Day-2 smoke tests, env-manifest generator, setup notes, requirements freeze | track/smoke/, track/setup/{gen_env_manifest.sh,env_manifest.md,setup_notes.md,requirements.lock} | pending mentor review |
+| 2026-07-27 | Day-4 harness prep: SAM3 stage (sam3.pt + pinned CLIP BPE vocab the wheel omits), SAM3_CHECKPOINT_PATH in track_env | track/setup/{setup.sh,track_env.sh,sam3.sha256sums}, track/tests/test_track_env.py | pending mentor review |
+| 2026-07-27 | Day-4 annotated harness trace + audits (first harness rollout, object_swap t2 s0, success with retry) | track/traces/, track/setup/setup_notes.md | pending mentor review |
