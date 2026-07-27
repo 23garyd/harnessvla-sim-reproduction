@@ -107,8 +107,9 @@ at `artifacts/harness/day4_object_swap_t2_s0_r2/` (its own
 released reference): that run also released high, the bottle "tipped over
 the front rim and rolled out," and the agent then self-corrected *within
 that same episode* by re-grasping and this time carrying to z=0.30 then
-explicitly descending to z≈0.22-0.23 ("DESCEND to seat bottle base inside
-basket below rim") before releasing successfully. That corrective lesson —
+explicitly descending to z≈0.22-0.23 ("DESCENDED to seat the bottle base
+below the rim before releasing", per the transcript) before releasing
+successfully. That corrective lesson —
 descend below rim before release for tall/off-center holds — exists only in
 that ad hoc stray run's own recipe, not in either released memory note
 (`tall_item_first_basket_placement.md`,

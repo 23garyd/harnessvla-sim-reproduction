@@ -144,7 +144,7 @@ count as scored matrix rows):**
 | seed | outcome | wall | note |
 |---|---|---|---|
 | s1 | failure (993 s) | correct grasp+carry; release-from-height rolled the tall bottle off the rim (same failure mode as the seed-0 first attempt) and no recovery within budget. Direct SUCCEEDED on this seed — retained as an honest anti-example |
-| s2 | success (264 s) | basket at (-0.015, 0.275) — genuinely different from seed-0's (0.077, 0.245); localized live, first-try placement |
+| s2 | success (264 s) | basket at (-0.015, 0.275) — genuinely different from the Day-4 s0 rerun's live-grounded (0.077, 0.245) (the released s0 carry literal is [0.076, 0.231]); localized live, first-try placement |
 | s3 | success (254 s) | single attempt, no reset |
 
 Mechanism evidence on novel scenes: re-grounding confirmed (s2's shifted
@@ -183,7 +183,8 @@ Day-12's full ablation.
 the same 4 cells/seeds (`track/manifests/harness_v2.json`, seed 0
 bootstrap_only + s1–s5); released one-shot regime as-is — guide cell budget
 1200 steps, env backstop `--max-episode-steps 1220`; planner pinned
-claude_code/claude-opus-4-8, 60 turns, keys stripped; wall cap 2400 s. Budget
+claude_code/claude-opus-4-8, 60 turns, planner-timeout 1200 s, keys
+stripped; wall cap 2400 s. Budget
 asymmetry vs direct (600) documented as deviation row 3. Direct rows scored
 under v1 carry forward as the paired direct arm (nothing behavior-affecting
 changed for that condition).
@@ -197,6 +198,14 @@ used without coordinate replay ✅ (audit), scoring rules frozen ✅ (v2). PASSE
   cells in a new registry version; make `direct_lib.select_cell`
   condition-aware (it currently matches on suite+task_id only); record any
   strict-regime step-cap delta in the deviation table.
+- Day 6 (batch runner): OWNS harness budget enforcement — pass the pinned
+  `--max-episode-steps 1220` / `--max-turns 60` / `--planner-timeout-s 1200`
+  flags on every scored harness launch, enforce the 2400 s wall cap, and write
+  harness `run_meta`/`result_row` records (needs a harness-condition variant
+  of `build_run_meta`/`build_result_row` — the current ones hardcode
+  condition="direct", turns=0, planner_model="none"). Also: require `task_id`
+  in `validate_manifest`'s cell schema (matcher already consumes it;
+  test fixtures need updating alongside).
 - Day 6 (batch runner): append `RpcError.server_traceback` to infra-row
   evidence and capture a per-run vla_server log slice (row-level evidence is
   currently thin for RPC-side failures); ledger aggregation must filter
