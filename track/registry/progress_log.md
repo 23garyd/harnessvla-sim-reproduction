@@ -96,3 +96,32 @@ Detailed evidence lives in the files each entry points to.
 - Gate: harness rollout valid end-to-end ✅, memory without coordinate
   replay ✅, scoring rules frozen ✅. PASSED — cleared for the Day-6–10
   paired matrix.
+
+## Day 6 — batch runner & first paired point (2026-07-27, tag `day6-batch-runner`)
+
+- Built via 7 reviewed tasks (suite 82 → 101 green): task_id schema parity;
+  `harness_lib` (v2 records; predicate-only CUMULATIVE scoring — review
+  hardened last-entry reading into rlinf's success_once semantics);
+  `run_harness` (v2-pinned rpent wrapper: key strip, wall-cap process-group
+  kill, stray sweep, result_row always written); `batch_runner`
+  (resume-without-overwrite, infra retry cap 2, immutable queue records,
+  shared-VLA phase ordering, raw verification of every new row); ledger
+  print now separates scored from infra rows.
+- Day-6 gate PASSED live: core_v1 dry-run honored all 20 direct rows (0
+  re-runs); one live harness cell verified against raw artifacts; stopped
+  batch resumed with 19 pending and exactly one run dir (no overwrite);
+  row success == raw predicate.
+- The pilot is the first paired core-matrix point and it landed on the
+  starkest cell: **harness SUCCESS on libero_spatial_task t2 s1 (446 s,
+  1 vla_act + 9 analytic, 24 turns) where direct went 0/5.**
+- Matrix-run watch items (from the final review; fix before any UNATTENDED
+  queue): (1) after a verify_row "disagrees" crash, triage that run dir
+  before re-invoking — a blind restart would count the bad row as done;
+  (2) every `verified:` line must pair with a fresh timestamp dir (an
+  early-crash retry could re-verify the previous attempt); (3) invoke the
+  matrix with the single harness manifest so the queue record captures the
+  full plan.
+- Remaining: 19 scored harness cells (~2.5–4 h attended, planner spend on
+  the subscription) → then Day 7 triage + Day 8 compare.py. Note for
+  compare.py: harness wall_seconds includes ~3–4 min server boot (launcher
+  clock) — not like-for-like with direct wall columns.
