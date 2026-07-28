@@ -106,3 +106,18 @@ def test_missing_task_id_fails():
     del m["cells"][0]["task_id"]
     with pytest.raises(ValueError, match="task_id"):
         manifests.validate_manifest(m)
+
+
+def test_ablation_hiddenmem_manifest_loads_and_scores_5_cells():
+    from pathlib import Path
+    p = (Path(__file__).resolve().parents[1]
+         / "manifests" / "ablation_hiddenmem_v2.json")
+    m = manifests.load_manifest(p)
+    assert m["exp_version"] == "v2-hiddenmem"
+    assert m["budgets"] == {"max_steps": 1200, "max_turns": 60,
+                            "max_wall_seconds": 2400}
+    cells = manifests.scored_cells(m)
+    assert len(cells) == 5
+    assert all(c[:3] == ("harness", "libero_object_swap",
+                         "libero_object_swap_t2") for c in cells)
+    assert sorted(c[3] for c in cells) == [1, 2, 3, 4, 5]

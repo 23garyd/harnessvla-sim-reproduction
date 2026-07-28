@@ -1,0 +1,16 @@
+{
+  "exp_version": "v2-hiddenmem",
+  "frozen": "2026-07-28 (Day 8, predeclared BEFORE any rollout — see experiment_registry.md ablation row). Hidden-memory ablation on the Object-S regression cell: identical v2 pins/budgets/planner, but the released TSM (resources/libero/memory + results_object_pert) is stashed and HF_HUB_OFFLINE=1 blocks re-sync, so the planner sees no memory notes and no seed-0 reference. Hypothesis (from day7_triage.md section 5): the released carry_z ballistic-release rule is the Object-S regression mechanism; prediction H1: hidden-memory success > 2/5 with releases executed at/below rim height; alternative H0: memory-free planner does worse or equal (memory was net-helpful). Runs land in artifacts/ablation/runs and NEVER enter the core paired ledger.",
+  "budgets": {"max_steps": 1200, "max_turns": 60, "max_wall_seconds": 2400},
+  "caps": {"max_rollouts": 10, "max_tokens_per_rollout": 0},
+  "cells": [
+    {"condition": "harness", "suite": "libero_object_swap",
+     "task": "libero_object_swap_t2", "task_id": 2,
+     "anchor": "Object-S regression cell (direct 4/5, harness-with-memory 2/5)",
+     "seeds": [{"seed": 1, "bootstrap_only": false},
+               {"seed": 2, "bootstrap_only": false},
+               {"seed": 3, "bootstrap_only": false},
+               {"seed": 4, "bootstrap_only": false},
+               {"seed": 5, "bootstrap_only": false}]}
+  ]
+}
