@@ -25,8 +25,12 @@ MAX_INFRA_ATTEMPTS = 2
 VLA_PORT = 18473
 
 
-def plan_pending(manifest, ledger_rows, max_infra_attempts=MAX_INFRA_ATTEMPTS):
-    """Return (pending, exhausted) cell dicts in manifest order."""
+def plan_pending(manifest, ledger_rows, max_infra_attempts=MAX_INFRA_ATTEMPTS,
+                 manifest_path=None):
+    """Return (pending, exhausted) cell dicts in manifest order. Each cell
+    carries the manifest path it was planned from so run_cell launches the
+    launcher against the SAME frozen manifest (Day-11 regression: the
+    launchers' defaults are the core manifests)."""
     done, infra = set(), {}
     for r in ledger_rows:
         if r["exp_version"] != manifest["exp_version"]:
@@ -43,6 +47,8 @@ def plan_pending(manifest, ledger_rows, max_infra_attempts=MAX_INFRA_ATTEMPTS):
         key = (cond, task, seed)
         item = {"condition": cond, "suite": suite,
                 "task_id": cell_row["task_id"], "seed": seed}
+        if manifest_path is not None:
+            item["manifest"] = str(manifest_path)
         if key in done:
             continue
         if infra.get(key, 0) >= max_infra_attempts:
@@ -149,6 +155,8 @@ def run_cell(cell, runs_root, vla_endpoint=None):
                str(REPO / "track/launchers/run_harness.py"),
                "--suite", cell["suite"], "--task-id", str(cell["task_id"]),
                "--seed", str(cell["seed"])]
+    if cell.get("manifest"):
+        cmd += ["--manifest", cell["manifest"]]
     print(f"=== {cell['condition']} {cell['suite']} t{cell['task_id']} "
           f"seed {cell['seed']} ===", flush=True)
     subprocess.run(cmd, check=False)
@@ -185,7 +193,7 @@ def main(argv=None):
     record_written = False
     for mpath in args.manifests:
         manifest = load_manifest(mpath)
-        pending, exhausted = plan_pending(manifest, rows)
+        pending, exhausted = plan_pending(manifest, rows, manifest_path=mpath)
         for cell in pending + exhausted:
             _CELL_VERSIONS[(cell["condition"], cell["suite"],
                             cell["seed"])] = manifest["exp_version"]

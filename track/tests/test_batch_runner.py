@@ -129,3 +129,32 @@ def test_verify_row_uses_cumulative_predicate(tmp_path):
     states[0]["libero_terminated"] = True
     states_path.write_text(json.dumps(states))
     batch_runner.verify_row(run_dir)  # must NOT raise
+
+
+def test_plan_pending_carries_manifest_path():
+    # Day-11 regression: run_cell must pass the SAME manifest the cell was
+    # planned from — the launchers' defaults are the core manifests, so v3
+    # cells crashed select_cell ("not in the frozen manifest").
+    pending, _ = batch_runner.plan_pending(
+        manifest(), [], manifest_path="/x/ext_v3_harness.json")
+    assert all(c["manifest"] == "/x/ext_v3_harness.json" for c in pending)
+
+
+def test_run_cell_command_includes_manifest(monkeypatch, tmp_path):
+    calls = {}
+
+    def fake_run(cmd, check):
+        calls["cmd"] = cmd
+
+    monkeypatch.setattr(batch_runner.subprocess, "run", fake_run)
+    monkeypatch.setattr(batch_runner, "newest_run_dir",
+                        lambda *a: tmp_path)
+    monkeypatch.setattr(batch_runner, "verify_row", lambda d: {
+        "validity": "success", "terminal_reason": "benchmark_predicate"})
+    cell = {"condition": "harness", "suite": "libero_10_swap",
+            "task_id": 2, "seed": 3, "manifest": "/x/ext_v3_harness.json"}
+    batch_runner._CELL_VERSIONS[("harness", "libero_10_swap", 3)] = "v3"
+    batch_runner.run_cell(cell, tmp_path)
+    cmd = calls["cmd"]
+    assert "--manifest" in cmd
+    assert cmd[cmd.index("--manifest") + 1] == "/x/ext_v3_harness.json"
