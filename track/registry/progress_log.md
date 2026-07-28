@@ -281,3 +281,64 @@ Day 7 entry and `day7_triage.md` §1–2 for the corrected matrix
   mechanism metrics extracted without new rollouts. ✅ Next (Day 9):
   cross-perturbation case studies — the 3 direct✓→harness✗ pairs +
   Object-S s3/s4 with-memory retry transcripts.
+
+## Day 9 — matched case studies, mechanism correction & synthesis (2026-07-28)
+
+- **MAJOR CORRECTION (adversarial re-triage of Object-S s3/s4 retries):
+  the Day-8 carry-height mechanism is falsified; the real mechanism is
+  reference-coordinate ANCHORING.** The ablation outcome (5/5 vs 2/5)
+  stands; the causal path is revised. Falsifying evidence + ground
+  truth (rim bands from same-seed depth maps; basket half-width 0.075):
+
+  | run | release xy @ z | true center | Δx | outcome |
+  |---|---|---|---|---|
+  | with-mem s3 | (0.072, 0.216) @ 0.331 | (−0.010, 0.246) | **+0.082** | bounce-out |
+  | with-mem s4 | (0.076, 0.234) @ 0.332 | (−0.002, 0.247) | **+0.078** | roll-out |
+  | hidden-mem s3 | (−0.005, 0.238) @ 0.28 | (−0.010, 0.246) | +0.005 | success |
+  | hidden-mem s4 | (0.000, 0.245) @ 0.21 | (−0.002, 0.247) | +0.002 | success |
+  | reference s0 | (0.086, 0.237) @ **0.367** | ≈own center | ~0 | success |
+
+  The failing releases were OUTSIDE the basket footprint in x; z is
+  exonerated (s0 succeeded from 0.367; hidden-mem s3 from carry height
+  0.28 without descending). Both with-memory planners chose the
+  +x-biased perception estimate BECAUSE it matched the cached s0
+  absolute ("robust region median matches s0's (0.076, 0.231)",
+  s4 run.log:53) over the accurate center_xyz their own tools returned;
+  s1's s0-copied carry binding (Day-5 audit) is the same mechanism.
+- **Audit-methodology finding**: this anchoring leak evades the Day-5
+  coordinate-leakage grep — the stale absolute never enters an action;
+  it biases estimator SELECTION. memory_audit.md §7 addendum; future
+  leakage audits must check estimate-selection reasoning against tool
+  outputs.
+- Case study Goal-T s2 (direct 106 steps ✓ vs harness planner_timeout
+  ✗): pi0's place-reflex measured in gripper telemetry (gap 0.0186 →
+  0.0782@z0.997 drop → re-close 0.0011 → 0.0778@z1.226 drop); the
+  harness lacks a grab-and-hold VLA mode — truncated pi0_pick = 0-lift
+  no-ops, full pi0_pick = memorized place. Direct succeeds because
+  nothing interrupts the policy's own pick-and-place.
+- Direct-arm evidence limits (recorded honestly): the Day-3 driver
+  persists NO trajectories (5 files/run, by design); predicates
+  (`In`/`On`) have no gripper-open term and all 3 paired direct
+  successes fired MID-CHUNK — "policy descends then progressively
+  opens" is NOT measurable from our artifacts. Optional extension
+  listed: deterministic instrumented replay (pins + seed mapping make
+  it exact).
+- Cross-perturbation synthesis (full: day9_case_studies.md §5):
+
+  | cell | perturbation | direct | harness | pairing shows |
+  |---|---|---|---|---|
+  | Spatial-T | objects relocated | 0/5 | **5/5** | pure re-grounding rescue |
+  | Goal-S | fixture swapped | 0/5 | **3/5** | re-grounding rescue; residual physical failures |
+  | Goal-T | predicate flipped | 1/5 | 1/5 | perturbation inside the policy's motor program — no harness lever |
+  | Object-S | object swapped | 4/5 | **2/5** | stale memory anchors mis-ground a competent policy |
+
+  **The harness converts perception problems into wins and inherits or
+  amplifies motor-program and memory-quality problems — gains and
+  costs both live at the grounding seam.**
+- Memory-quality defects for upstream (maintainer-gated path):
+  reference absolutes act as confirmation anchors; `tall_item...` bias
+  note is scene-inverted for this cell; "do not cache absolutes" must
+  extend to estimator selection.
+- Gate: all 3 regression pairs explained from raw artifacts, mechanism
+  claims adversarially cross-checked (one revised in writing), synthesis
+  frozen. ✅ Next (Day 10): MVP freeze + report skeleton.

@@ -90,16 +90,26 @@ tripwire clean; `artifacts/ablation/ledger.csv`):
 | 4 | ✗ | ✗ turn_budget | **✓ 18 turns** | 0.219 |
 | 5 | ✓ | ✓ | **✓ 19 turns** | 0.180 |
 
-**H1 confirmed, and then some**: removing the released memory didn't
-just recover the with-memory regression (2/5 → 5/5), it beat direct
-(4/5) — including seed 4, which BOTH frozen arms fail. Every
-memory-free run terminated at eef z 0.18–0.29, i.e. the planner
-naturally descends to seat the object before releasing when no note
-tells it otherwise; the released MEMORY.md calibration ("release at
-carry height; do not descend inside the basket footprint",
-carry_z=0.30) is a seed-0-calibrated rule that generalizes negatively.
-Memory-free runs were also fast (15–26 turns, 1 pi0 call each) — no
-exploration penalty on this cell.
+**H1 outcome confirmed**: removing the released memory didn't just
+recover the with-memory regression (2/5 → 5/5), it beat direct (4/5) —
+including seed 4, which BOTH frozen arms fail. Memory-free runs were
+also fast (15–26 turns, 1 pi0 call each) — no exploration penalty on
+this cell.
+
+> **CORRECTION (Day-9, 2026-07-28 — mechanism revised).** H1's causal
+> story ("the carry-height release rule causes the bounce-outs") was
+> falsified by the Day-9 adversarial triage of the s3/s4 with-memory
+> retries: the seed-0 reference succeeded from z=0.367, hidden-mem s3
+> succeeded at carry height z=0.28 without descending, and depth-map
+> ground truth shows the failing releases were **+0.078–0.082 m
+> off-center in x — outside the basket footprint** (half-width 0.075),
+> while all successful releases were within 0.005 m in x. The memory
+> harms this cell via **reference-coordinate anchoring**: the cached
+> s0 basket absolute (0.076, 0.231) made both planners select the
+> +x-biased perception estimate over the accurate one their own tools
+> returned. z is confounded with xy in this table; xy is decisive.
+> Full evidence: `day9_case_studies.md` §1–2. The ablation OUTCOME
+> (5/5 vs 2/5) is unaffected.
 
 Scope caution for the report: this is ONE cell (5 seeds) chosen
 BECAUSE Day-7 triage implicated the memory there; it does not license

@@ -137,3 +137,22 @@ discovered and fixed ad hoc but never fed back into the released notes —
 so the released TSM is a real, working structural prior with genuine live
 re-grounding on the happy path, but it is incomplete as a *safety* prior and
 provides no protection against partial (rather than absent) re-grounding.
+
+## 7. Day-9 addendum: anchoring leak — a coordinate-leakage mode the §3 grep cannot see
+
+The Day-9 case studies (`day9_case_studies.md` §1–2) found a leakage
+mode this audit's §3 methodology (grep released literals in executed
+actions) is blind to: **reference-coordinate anchoring of estimator
+selection**. With-memory Object-S planners on seeds 3/4 never pasted
+the s0 basket absolute (0.076, 0.231) into a command — instead, faced
+with two conflicting fresh measurements (accurate region `center_xyz`
+≈ 0.00 vs +x-biased `median_xyz`/SAM3 front-wall centroid ≈ +0.066),
+both chose the biased one BECAUSE it matched the cached reference
+("robust region median matches s0's (0.076, 0.231)", s4 run.log:53),
+releasing outside the basket footprint. s1's copied carry binding (§2)
+is the same mechanism. Consequence for §6's verdict: "live
+re-grounding" held at the level of issuing fresh perception calls, but
+the reference can still capture the *interpretation* of those calls
+when the readout is ambiguous. Any future leakage audit must check
+estimate-selection reasoning against the tool outputs, not just action
+parameters against released literals.
