@@ -151,3 +151,56 @@ was 60 turns the binding constraint (3/5 turn_budget rows say yes); (3) the
 5 direct✓→harness✗ pairs as case studies. NO retuning on eval seeds — the
 matrix is frozen; findings go to the deviation/limitations sections and, if
 warranted, a predeclared ablation.
+
+**[Superseded 2026-07-28: the Object-S 0/5 and the aggregate 9/20 in the
+table above were artifacts of a planner-availability failure — see the
+Day 7 entry and `day7_triage.md` §1–2 for the corrected matrix
+(harness 11/20, Object-S 2/5).]**
+
+## Day 7 — matrix correction & failure-taxonomy triage (2026-07-28)
+
+- **Session-limit forensics**: the last 4 harness cells of the Day-6 queue
+  (object_swap s2–s5) hit the claude.ai subscription session limit — s3–s5
+  before turn 1 (0 steps, 0 VLA calls), s2 cut at turn 44. rpent exits 0 on
+  planner exceptions, so all four were misclassified valid_failure. Fixed
+  by stream-level classification (planner API error → infra_failure,
+  commit 2c49ac0; SDK planner-timeout → budget_exhausted/planner_timeout,
+  commit c9e00e5; 107 tests green), rows regenerated from raw artifacts
+  (originals preserved), cells re-run under the frozen infra-retry
+  protocol (0 rate limits, raw-verified): s2 ✓ 21 turns, s5 ✓ 20 turns,
+  s3/s4 genuine turn_budget failures. Risk log updated (≤15 harness
+  cells per session window).
+- **CORRECTED CORE MATRIX (40 scored; ledger 46 rows = 40 + 6 infra)**:
+  Spatial-T 0/5→**5/5**, Goal-S 0/5→**3/5**, Goal-T 1/5→1/5, Object-S
+  4/5→**2/5**; aggregate **direct 5/20 (25%) → harness 11/20 (55%)**.
+  Paired flips 9 rescued / 3 regressed / 2 both-pass / 6 both-fail, net +6.
+  Direction reproduced with a real (halved) Object-S regression.
+- Failure taxonomy over the 9 scored harness failures (7 transcript-triaged
+  via subagent analysis): release 3, transport 2, empty_grasp 1,
+  grounding 1. Localization is NOT the weak link (one grounding failure in
+  the whole matrix); analytic release/place geometry and post-drop grasp
+  re-acquisition are.
+- Goal-T no-gain explained as ONE causal chain: pi0_pick executes the
+  memorized base-task pick-AND-place (4 of 5 clean lifts ended with the
+  policy's place reflex dumping the bottle), truncated-chunk mitigation
+  yields no-op grasps, horizontal fallen bottle nearly un-graspable,
+  flipped In(bottle,bowl) predicate needs an upright carry. Turn cap
+  genuinely binding on only 2 of 9 failures (Goal-T s5, Goal-S s4).
+  Env-death sub-finding: Goal-T s3/s4 killed their env ("executing action
+  in terminated episode") at counted steps 654/804 despite backstop 1220 —
+  step under-counting; recorded as limitation, not changed mid-matrix.
+- Object-S regression mechanism found: the released memory's carry_z
+  ballistic-release rule for tall bottles (+ the no-pi0-end-to-end
+  constraint) replaces pi0's learned lower-into-cavity place with a
+  ~0.2 m free-fall — not seed-robust; s1 bounced out, recovered the
+  horizontal re-grasp, and ran out of turns one placement short while
+  direct pi0.5 solved the seed in 143 steps. Sharpens the Day-5
+  memory-audit caveat; candidate Day-12 ablation + upstream memory note.
+- Upstream RPent update (user-flagged) reviewed by fetch+diff:
+  `6e4ba18..c01b9cf` = 2 operational fixes (incl. the Day-2 parent-watch
+  bug, independently fixed upstream) + docs; released assets and regime
+  untouched → **pin unchanged**; bump recorded as extension-matrix
+  candidate. Full triage: `track/registry/day7_triage.md`.
+- Gate: every failure category attributed from raw artifacts, corrected
+  matrix frozen, no eval-seed retuning. ✅ Next: Day 8 compare.py with
+  Wilson intervals + mechanism metrics from existing traces.
