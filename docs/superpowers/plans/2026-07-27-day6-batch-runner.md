@@ -20,21 +20,7 @@
 - Modify: `track/analysis/manifests.py` (cell validation loop)
 - Modify: `track/tests/test_manifests.py` (fixture + new test)
 
-- [ ] **Step 1: Write the failing test.** In `track/tests/test_manifests.py`, FIRST update the fixture — add `"task_id": 2, "task": "libero_goal_swap_t2"` keys to the cell in `valid_manifest()` so it reads:
-
-```python
-        "cells": [
-            {"condition": "direct", "suite": "libero_goal_swap",
-             "task": "libero_goal_swap_t2", "task_id": 2,
-             "seeds": [
-                 {"seed": 0, "bootstrap_only": True},
-                 {"seed": 1, "bootstrap_only": False},
-                 {"seed": 2, "bootstrap_only": False},
-             ]},
-        ],
-```
-
-Then APPEND:
+- [ ] **Step 1: Write the failing test.** In `track/tests/test_manifests.py`, FIRST update the fixture — add ONLY a `"task_id": 2` key to the cell in `valid_manifest()` (leave the existing suite/task strings untouched: `test_scored_cells_excludes_bootstrap` hardcodes them). Then APPEND:
 
 ```python
 def test_missing_task_id_fails():
