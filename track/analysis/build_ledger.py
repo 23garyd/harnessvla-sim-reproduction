@@ -98,7 +98,9 @@ def main(argv=None):
     args = parser.parse_args(argv)
     rows, skipped_seed0, incomplete = build_ledger(args.runs_root)
     write_csv(rows, args.out)
-    print(f"ledger: {len(rows)} scored rows -> {args.out} "
+    infra = sum(1 for r in rows if r["validity"] == "infra_failure")
+    print(f"ledger: {len(rows)} rows ({len(rows) - infra} scored, "
+          f"{infra} infra_failure) -> {args.out} "
           f"(excluded: {skipped_seed0} seed-0 bootstrap, "
           f"{incomplete} incomplete)")
     return 0

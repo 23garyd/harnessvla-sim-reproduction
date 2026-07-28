@@ -120,3 +120,13 @@ def test_success_written_as_int(tmp_path):
     with open(out) as f:
         got = list(csv.DictReader(f))
     assert got[0]["success"] == "0"
+
+
+def test_main_print_separates_scored_and_infra(tmp_path, capsys):
+    write_run(tmp_path, seed=1, ts="20260727T000001")
+    write_run(tmp_path, seed=2, ts="20260727T000002", success=False,
+              validity="infra_failure", evidence="server crash: log ...")
+    out = tmp_path / "ledger.csv"
+    build_ledger.main(["--runs-root", str(tmp_path), "--out", str(out)])
+    text = capsys.readouterr().out
+    assert "2 rows (1 scored, 1 infra_failure)" in text
