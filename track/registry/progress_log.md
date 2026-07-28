@@ -204,3 +204,39 @@ Day 7 entry and `day7_triage.md` §1–2 for the corrected matrix
 - Gate: every failure category attributed from raw artifacts, corrected
   matrix frozen, no eval-seed retuning. ✅ Next: Day 8 compare.py with
   Wilson intervals + mechanism metrics from existing traces.
+
+## Day 8 — compare.py, mechanism metrics & hidden-memory ablation (2026-07-28)
+
+- `track/analysis/compare.py` (TDD, 8 tests; suite 115 green): paired
+  table with Wilson 95% intervals, complete-pairs-only aggregation,
+  infra excluded, duplicate detection. Aggregate direct 5/20
+  [0.11, 0.47] vs harness 11/20 [0.34, 0.74] — intervals barely
+  overlap at n=20.
+- Mechanism metrics from existing traces (`day8_mechanism.md`):
+  **10 of 11 harness successes fire the predicate during an analytic
+  primitive** (9 release, 1 move_to; 1 pi0_pick) — the paper's division
+  of labor, visible in artifacts; median 1 pi0 call per success vs
+  direct's 120-chunk budget; success/failure turn distributions
+  disjoint (≤28 vs ≥47).
+- **Predeclared hidden-memory ablation (registry v2-hiddenmem,
+  registered before any rollout): 5/5** vs with-memory 2/5 and direct
+  4/5 on Object-S — H1 confirmed: the released TSM's carry-height
+  ballistic-release rule causes the regression; all memory-free runs
+  descended and released at eef z 0.18–0.29 (the with-memory failure
+  released at 0.334 and bounced out). Seed 4 solved by NEITHER frozen
+  arm fell to the memory-free harness in 18 turns. Scope: one
+  implicated cell; not a general "memory hurts" claim.
+- Ablation integrity (methodology findings, quarantined + tripwired):
+  attempt 1 — the planner HUNTED for its hidden memory via repo-wide
+  find and read the stash back; attempt 2 — HF download cache leaked
+  note filenames via .lock/.metadata. Final protocol: opaque
+  out-of-repo tar + HF_HUB_OFFLINE + per-seed leak tripwire. All
+  violations quarantined with INVALID notes; risk log updated.
+- Interruption note: one queue stop mid-seed-4 was an external task
+  stop, NOT an API limit (no rate_limit signature; planner mid-tool-call)
+  — trap restored memory, pin clean, seeds 4–5 resumed on request.
+- Gate: comparison table + intervals frozen from the ledger, one
+  predeclared ablation executed and scored against its hypothesis,
+  mechanism metrics extracted without new rollouts. ✅ Next (Day 9):
+  cross-perturbation case studies — the 3 direct✓→harness✗ pairs +
+  Object-S s3/s4 with-memory retry transcripts.

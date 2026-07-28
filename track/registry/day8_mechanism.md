@@ -72,11 +72,65 @@ triaged failures). The seam that wins is the seam that loses.
 - Failures also multiply VLA retries (median 3): consistent with the
   Day-7 chains, where re-grasping after a drop is the dominant sink.
 
-## 4. Notes for the report
+## 4. Hidden-memory ablation result (predeclared; registry v2-hiddenmem)
+
+Predeclaration (before any rollout): H1 = the released TSM's carry_z
+ballistic-release rule causes the Object-S regression; prediction
+"> 2/5 with releases executed at/below rim height". H0 = memory
+net-helpful or neutral (≤ 2/5).
+
+Result — **hidden-memory 5/5** (all raw-verified, per-seed leak
+tripwire clean; `artifacts/ablation/ledger.csv`):
+
+| seed | direct | v2 harness (with memory) | v2-hiddenmem | terminal eef z |
+|---|---|---|---|---|
+| 1 | ✓ | ✗ turn_budget (release z=0.334 bounced out) | **✓ 22 turns** | 0.214 |
+| 2 | ✓ | ✓ | **✓ 26 turns** | 0.187 |
+| 3 | ✓ | ✗ turn_budget | **✓ 15 turns** | 0.285 |
+| 4 | ✗ | ✗ turn_budget | **✓ 18 turns** | 0.219 |
+| 5 | ✓ | ✓ | **✓ 19 turns** | 0.180 |
+
+**H1 confirmed, and then some**: removing the released memory didn't
+just recover the with-memory regression (2/5 → 5/5), it beat direct
+(4/5) — including seed 4, which BOTH frozen arms fail. Every
+memory-free run terminated at eef z 0.18–0.29, i.e. the planner
+naturally descends to seat the object before releasing when no note
+tells it otherwise; the released MEMORY.md calibration ("release at
+carry height; do not descend inside the basket footprint",
+carry_z=0.30) is a seed-0-calibrated rule that generalizes negatively.
+Memory-free runs were also fast (15–26 turns, 1 pi0 call each) — no
+exploration penalty on this cell.
+
+Scope caution for the report: this is ONE cell (5 seeds) chosen
+BECAUSE Day-7 triage implicated the memory there; it does not license
+"memory hurts" in general — on Spatial-T/Goal-S the with-memory harness
+is what produced the 8 rescues, and the paper's swap-cell asymmetry
+prediction (memory should matter most where re-grounding is required)
+is untested here. It licenses: the released TSM is not uniformly
+seed-robust, and its placement rules can invert a strong cell.
+
+### Ablation-integrity findings (methodology, reportable)
+
+Two attempts were invalidated by the tripwire before the clean run:
+1. The planner, finding memory/ absent, ran repo-wide `find` hunts and
+   READ THE STASH BACK (attempt 1, stash under artifacts/). Naive
+   resource-hiding is not a valid ablation technique for agents with
+   shell access.
+2. After the stash moved to an opaque out-of-repo tar, the HF download
+   cache still leaked note FILENAMES via `*.lock`/`*.metadata`
+   (attempt 2 seed 4) — strategy-bearing titles like
+   `tall_item_first_basket_placement`.
+Hardening that held: opaque tar in a 0700 mktemp dir outside the repo,
+HF_HUB_OFFLINE=1, per-seed tripwire grep over launcher.log + run.log +
+stream for the stash path and note filenames. Quarantines:
+`artifacts/ablation/attempt1_condition_violated/`,
+`artifacts/ablation/attempt2_seed4_condition_violated/`.
+
+## 5. Notes for the report
 
 - planner_timeout now appears in the terminal_reason vocabulary
   (goal_task s2); treat it with turn_budget as "budget_exhausted".
 - The 6 infra rows (2 direct Day-3, 4 harness session-limit) are
   documented attempts with evidence strings, per protocol.
-- Predeclared ablation in flight: registry v2-hiddenmem (Object-S,
-  s1–s5, memory hidden). Results file: this directory, Day-8 addendum.
+- The ablation arm lives entirely under artifacts/ablation/ (own
+  ledger); the core paired matrix is untouched.
