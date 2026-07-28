@@ -45,7 +45,27 @@ def build_harness_run_meta(*, exp_version, suite, task_id, seed, budgets,
 def empty_outcome():
     """Outcome shell for infra rows when no artifacts exist."""
     return {"success": False, "steps": 0, "turns": 0, "vla_act_calls": 0,
-            "analytic_calls": 0, "wall_s": 0.0, "planner_finish_status": None}
+            "analytic_calls": 0, "wall_s": 0.0, "planner_finish_status": None,
+            "planner_api_error": None}
+
+
+def _planner_api_error(rpent_dir):
+    """Scan the raw planner stream for backend-level errors (e.g. the
+    2026-07-28 subscription session limit, surfaced as a synthetic
+    AssistantMessage with error="rate_limit"). Bare {"type": "error"}
+    records are NOT counted: rpent uses those for budget outcomes like
+    max-turns. Returns a short evidence string, or None."""
+    for stream in sorted(rpent_dir.glob("*.stream.jsonl")):
+        for line in stream.read_text().splitlines():
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if rec.get("type") == "AssistantMessage" and rec.get("error"):
+                texts = [c.get("text", "") for c in rec.get("content") or []
+                         if isinstance(c, dict)]
+                return f"{rec['error']}: {' '.join(texts).strip()}"[:500]
+    return None
 
 
 def parse_harness_outcome(rpent_dir):
@@ -85,6 +105,7 @@ def parse_harness_outcome(rpent_dir):
         "analytic_calls": analytic_calls,
         "wall_s": float(stats.get("elapsed_s", 0.0) or 0.0),
         "planner_finish_status": (t.get("finish") or {}).get("status"),
+        "planner_api_error": _planner_api_error(rpent_dir),
     }
 
 
@@ -92,6 +113,11 @@ def resolve_harness_outcome(outcome, budgets):
     """Map a parsed outcome to (validity, terminal_reason). Predicate wins."""
     if outcome["success"]:
         return "success", "benchmark_predicate"
+    # A planner backend error (rate limit, API failure) means the policy was
+    # never fully exercised: budget/step readings are truncated artifacts of
+    # the abort, so this outranks every non-success classification.
+    if outcome.get("planner_api_error"):
+        return "infra_failure", "planner_api_error"
     if outcome["turns"] >= budgets["max_turns"]:
         return "budget_exhausted", "turn_budget"
     if outcome["steps"] >= budgets["max_steps"]:

@@ -7,7 +7,8 @@ from track.launchers import direct_lib, harness_lib
 
 
 def write_rpent_dir(tmp_path, *, terminated=True, finish_status="success",
-                    turns=23, elapsed=264.3, with_states=True):
+                    turns=23, elapsed=264.3, with_states=True,
+                    stream_records=None):
     d = tmp_path / "rpent"
     d.mkdir(parents=True, exist_ok=True)
     if with_states:
@@ -29,7 +30,23 @@ def write_rpent_dir(tmp_path, *, terminated=True, finish_status="success",
         "finish": {"status": finish_status},
         "model": "claude-opus-4-8",
     }))
+    if stream_records is not None:
+        (d / "claude_x.txt.stream.jsonl").write_text(
+            "\n".join(json.dumps(r) for r in stream_records) + "\n")
     return d
+
+
+# Shapes taken verbatim from the 2026-07-28 rate-limited object_swap runs.
+RATE_LIMIT_RECORD = {
+    "type": "AssistantMessage",
+    "content": [{"text": "You've hit your session limit · resets 3:10am"}],
+    "model": "<synthetic>", "error": "rate_limit",
+}
+MAX_TURNS_ERROR_RECORD = {
+    "type": "error",
+    "message": ("Exception: Claude Code returned an error result: "
+                "Reached maximum number of turns (60)"),
+}
 
 
 BUDGETS = {"max_steps": 1200, "max_turns": 60, "max_wall_seconds": 2400}
@@ -65,6 +82,46 @@ def test_parse_empty_states_raises(tmp_path):
     (d / "states.json").write_text("[]")
     with pytest.raises(ValueError, match="empty or malformed"):
         harness_lib.parse_harness_outcome(d)
+
+
+def test_parse_detects_planner_api_error(tmp_path):
+    # A synthetic AssistantMessage carrying an error field means the planner
+    # backend failed (e.g. subscription session limit) — not a policy result.
+    d = write_rpent_dir(tmp_path, terminated=False, turns=1,
+                        stream_records=[RATE_LIMIT_RECORD])
+    o = harness_lib.parse_harness_outcome(d)
+    assert o["planner_api_error"] is not None
+    assert "rate_limit" in o["planner_api_error"]
+
+
+def test_parse_no_stream_means_no_api_error(tmp_path):
+    d = write_rpent_dir(tmp_path)
+    o = harness_lib.parse_harness_outcome(d)
+    assert o["planner_api_error"] is None
+
+
+def test_parse_max_turns_error_is_not_api_error(tmp_path):
+    # rpent surfaces max-turns exhaustion as a bare {"type": "error"} record;
+    # that is a budget outcome, not a planner API failure.
+    d = write_rpent_dir(tmp_path, terminated=False, turns=60,
+                        stream_records=[MAX_TURNS_ERROR_RECORD])
+    o = harness_lib.parse_harness_outcome(d)
+    assert o["planner_api_error"] is None
+
+
+def test_resolve_planner_api_error_is_infra():
+    o = {"success": False, "steps": 0, "turns": 1, "wall_s": 167.2,
+         "planner_api_error": "rate_limit: You've hit your session limit"}
+    assert harness_lib.resolve_harness_outcome(o, BUDGETS) == \
+        ("infra_failure", "planner_api_error")
+    # An API error mid-run invalidates budget readings too (truncated stats).
+    o["turns"] = 60
+    assert harness_lib.resolve_harness_outcome(o, BUDGETS) == \
+        ("infra_failure", "planner_api_error")
+    # But the benchmark predicate always wins.
+    o["success"] = True
+    assert harness_lib.resolve_harness_outcome(o, BUDGETS) == \
+        ("success", "benchmark_predicate")
 
 
 def test_resolve_mapping():

@@ -127,6 +127,9 @@ def main(argv=None):
         else:
             validity, reason = harness_lib.resolve_harness_outcome(
                 outcome, budgets)
+            if reason == "planner_api_error":
+                evidence = (f"planner API error: "
+                            f"{outcome['planner_api_error']}")
             if rc != 0 and not outcome["success"]:
                 validity, reason = "infra_failure", f"rpent_exit_{rc}"
                 evidence = (f"rpent exit {rc}; launcher.log and rpent/ logs "
