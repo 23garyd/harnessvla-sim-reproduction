@@ -608,6 +608,18 @@ def test_verify_row_detects_mismatch(tmp_path):
         batch_runner.verify_row(run_dir)
 
 
+def test_verify_row_uses_cumulative_predicate(tmp_path):
+    # Row scored success from a transient mid-episode True; verify must agree.
+    run_dir = make_run(tmp_path, terminated=False, row_success=True)
+    states_path = run_dir / "rpent" / "states.json"
+    states = json.loads(states_path.read_text())
+    states.append({"command": {"action": "move_to"},
+                   "result": {"steps_used": 3}, "libero_terminated": False})
+    states[0]["libero_terminated"] = True
+    states_path.write_text(json.dumps(states))
+    batch_runner.verify_row(run_dir)  # must NOT raise
+
+
 def test_queue_record_written(tmp_path):
     pending = [{"condition": "harness", "suite": "libero_goal_swap",
                 "task_id": 2, "seed": 1}]
@@ -687,7 +699,8 @@ def verify_row(run_dir):
     states_path = run_dir / "rpent" / "states.json"
     if row["condition"] == "harness" and states_path.exists():
         states = json.loads(states_path.read_text())
-        raw = bool(states[-1].get("libero_terminated")) if states else False
+        # Cumulative, matching harness_lib.parse_harness_outcome exactly.
+        raw = any(bool(e.get("libero_terminated")) for e in states)
         if bool(row["success"]) != raw:
             raise ValueError(
                 f"{run_dir}: result_row success={row['success']} disagrees "
@@ -872,7 +885,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Step 4: Run to verify.** File: 8 PASS. Full suite: 99 passed. py_compile batch_runner.
+- [ ] **Step 4: Run to verify.** File: 9 PASS. Full suite: 100 passed. py_compile batch_runner.
 - [ ] **Step 5: Commit** `git add track/launchers/batch_runner.py track/tests/test_batch_runner.py && git commit -m "feat: batch runner - resume without overwrite, infra retry cap, raw verification"`
 
 ---
@@ -907,7 +920,7 @@ def test_main_print_separates_scored_and_infra(tmp_path, capsys):
           f"{incomplete} incomplete)")
 ```
 
-- [ ] **Step 4: Verify.** Ledger file: 11 PASS. Full suite: 100 passed.
+- [ ] **Step 4: Verify.** Ledger file: 11 PASS. Full suite: 101 passed.
 - [ ] **Step 5: Commit** `git add track/analysis/build_ledger.py track/tests/test_build_ledger.py && git commit -m "fix: ledger print separates scored from infra rows"`
 
 ---
@@ -962,7 +975,7 @@ Expected: row `success` equals the raw predicate (the runner already verified th
 
 ### Task 7: Wrap-up
 
-- [ ] **Step 1:** Full dev suite → 100 passed; `git status --porcelain` clean.
+- [ ] **Step 1:** Full dev suite → 101 passed; `git status --porcelain` clean.
 - [ ] **Step 2:** Merge + push: `git checkout main && git merge day6-batch-runner --no-edit && git push origin main && git branch -d day6-batch-runner`
 - [ ] **Step 3:** Tag: `git tag -a day6-batch-runner -m "Day 6: manifest-driven batch runner, gate passed (resume without overwrite, raw-verified rows)" && git push origin day6-batch-runner`
 - [ ] **Step 4:** Append the Day-6 entry to `track/registry/progress_log.md` + registry change-log row; commit + push.
