@@ -1,44 +1,147 @@
 {
   "exp_version": "v3",
-  "frozen": "2026-07-28 (Day 11 extension design). Harness arm of the +4-suite extension: identical v2 regime (released one-shot 1200-step guide budget, env backstop 1220, claude-opus-4-8/60 turns, planner-timeout 1200 s, keys stripped). Seed 0 = bootstrap pilot per suite, never scored. Queue windowing: <= 12 harness cells per session window (risk log, session-limit rule).",
-  "budgets": {"max_steps": 1200, "max_turns": 60, "max_wall_seconds": 2400},
-  "caps": {"max_rollouts": 30, "max_tokens_per_rollout": 0},
+  "frozen": "2026-07-28 (Day 11 extension design). Harness arm of the +4-suite extension: identical v2 regime (released one-shot 1200-step guide budget, env backstop 1220, claude-opus-4-8/60 turns, planner-timeout 1200 s, keys stripped). Seed 0 = bootstrap pilot per suite, never scored. Queue windowing: <= 12 harness cells per session window (risk log, session-limit rule). AMENDED 2026-07-28 (pre-queue, family-pilot repair): libero_10_task cell moved t2->t3 \u2014 upstream asset gap, see anchor.",
+  "budgets": {
+    "max_steps": 1200,
+    "max_turns": 60,
+    "max_wall_seconds": 2400
+  },
+  "caps": {
+    "max_rollouts": 30,
+    "max_tokens_per_rollout": 0
+  },
   "cells": [
-    {"condition": "harness", "suite": "libero_object_task",
-     "task": "libero_object_task_t2", "task_id": 2,
-     "anchor": "Object-T (redirection; completes object family)",
-     "seeds": [{"seed": 0, "bootstrap_only": true},
-               {"seed": 1, "bootstrap_only": false},
-               {"seed": 2, "bootstrap_only": false},
-               {"seed": 3, "bootstrap_only": false},
-               {"seed": 4, "bootstrap_only": false},
-               {"seed": 5, "bootstrap_only": false}]},
-    {"condition": "harness", "suite": "libero_spatial_swap",
-     "task": "libero_spatial_swap_t2", "task_id": 2,
-     "anchor": "Spatial-S (swap; completes spatial family)",
-     "seeds": [{"seed": 0, "bootstrap_only": true},
-               {"seed": 1, "bootstrap_only": false},
-               {"seed": 2, "bootstrap_only": false},
-               {"seed": 3, "bootstrap_only": false},
-               {"seed": 4, "bootstrap_only": false},
-               {"seed": 5, "bootstrap_only": false}]},
-    {"condition": "harness", "suite": "libero_10_task",
-     "task": "libero_10_task_t2", "task_id": 2,
-     "anchor": "Long-T (redirection; new LIBERO-10 family)",
-     "seeds": [{"seed": 0, "bootstrap_only": true},
-               {"seed": 1, "bootstrap_only": false},
-               {"seed": 2, "bootstrap_only": false},
-               {"seed": 3, "bootstrap_only": false},
-               {"seed": 4, "bootstrap_only": false},
-               {"seed": 5, "bootstrap_only": false}]},
-    {"condition": "harness", "suite": "libero_10_swap",
-     "task": "libero_10_swap_t2", "task_id": 2,
-     "anchor": "Long-S (swap; new LIBERO-10 family)",
-     "seeds": [{"seed": 0, "bootstrap_only": true},
-               {"seed": 1, "bootstrap_only": false},
-               {"seed": 2, "bootstrap_only": false},
-               {"seed": 3, "bootstrap_only": false},
-               {"seed": 4, "bootstrap_only": false},
-               {"seed": 5, "bootstrap_only": false}]}
+    {
+      "condition": "harness",
+      "suite": "libero_object_task",
+      "task": "libero_object_task_t2",
+      "task_id": 2,
+      "anchor": "Object-T (redirection; completes object family)",
+      "seeds": [
+        {
+          "seed": 0,
+          "bootstrap_only": true
+        },
+        {
+          "seed": 1,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 2,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 3,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 4,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 5,
+          "bootstrap_only": false
+        }
+      ]
+    },
+    {
+      "condition": "harness",
+      "suite": "libero_spatial_swap",
+      "task": "libero_spatial_swap_t2",
+      "task_id": 2,
+      "anchor": "Spatial-S (swap; completes spatial family)",
+      "seeds": [
+        {
+          "seed": 0,
+          "bootstrap_only": true
+        },
+        {
+          "seed": 1,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 2,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 3,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 4,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 5,
+          "bootstrap_only": false
+        }
+      ]
+    },
+    {
+      "condition": "harness",
+      "suite": "libero_10_task",
+      "task": "libero_10_task_t3",
+      "task_id": 3,
+      "anchor": "Long-T (redirection; new LIBERO-10 family). AMENDED t2->t3 2026-07-28 pre-queue: LIBERO-Pro ships 0 init states for 10_task t2 (empty pruned_init, family-pilot infra finding); t3 has 50 + released ref",
+      "seeds": [
+        {
+          "seed": 0,
+          "bootstrap_only": true
+        },
+        {
+          "seed": 1,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 2,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 3,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 4,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 5,
+          "bootstrap_only": false
+        }
+      ]
+    },
+    {
+      "condition": "harness",
+      "suite": "libero_10_swap",
+      "task": "libero_10_swap_t2",
+      "task_id": 2,
+      "anchor": "Long-S (swap; new LIBERO-10 family)",
+      "seeds": [
+        {
+          "seed": 0,
+          "bootstrap_only": true
+        },
+        {
+          "seed": 1,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 2,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 3,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 4,
+          "bootstrap_only": false
+        },
+        {
+          "seed": 5,
+          "bootstrap_only": false
+        }
+      ]
+    }
   ]
 }
