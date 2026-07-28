@@ -171,10 +171,30 @@ Day 7 entry and `day7_triage.md` §1–2 for the corrected matrix
   s3/s4 genuine turn_budget failures. Risk log updated (≤15 harness
   cells per session window).
 - **CORRECTED CORE MATRIX (40 scored; ledger 46 rows = 40 + 6 infra)**:
-  Spatial-T 0/5→**5/5**, Goal-S 0/5→**3/5**, Goal-T 1/5→1/5, Object-S
-  4/5→**2/5**; aggregate **direct 5/20 (25%) → harness 11/20 (55%)**.
+
+  | cell | direct | harness | paper anchor |
+  |---|---|---|---|
+  | libero_spatial_task_t2 (Spatial-T) | 0/5 | **5/5** | 42→94 — full amplitude |
+  | libero_goal_swap_t2 (Goal-S) | 0/5 | **3/5** | 42→87 — clear gain |
+  | libero_goal_task_t2 (Goal-T) | 1/5 | 1/5 | 45→87 — NO gain |
+  | libero_object_swap_t2 (Object-S) | 4/5 | **2/5** | 78→90 — real regression, half the artifact's size |
+  | **aggregate** | **5/20 (25%)** | **11/20 (55%)** | 50.0→82.4 — direction reproduced |
+
   Paired flips 9 rescued / 3 regressed / 2 both-pass / 6 both-fail, net +6.
-  Direction reproduced with a real (halved) Object-S regression.
+  Object-S retry detail: s2 ✓ (21 turns, 411 s), s5 ✓ (20 turns, 396 s),
+  s3/s4 genuine turn_budget failures.
+- Failure-taxonomy table (primary label per scored harness failure):
+
+  | cell/seed | primary | terminal | convergent at cut? |
+  |---|---|---|---|
+  | Goal-T s2 | empty_grasp | planner_timeout (1200 s, turn 58) | no |
+  | Goal-T s3 | transport | turn_budget (env dead turn 54) | no |
+  | Goal-T s4 | release | turn_budget (env dead turn 56) | no |
+  | Goal-T s5 | release | turn_budget | **yes** (~4–6 turns short) |
+  | Goal-S s3 | transport | valid_failure (honest finish, 47/60) | no |
+  | Goal-S s4 | grounding | turn_budget | **yes** (2–4 turns short) |
+  | Object-S s1 | release | turn_budget | partial |
+  | Object-S s3/s4 (retries) | deferred to Day-9 | turn_budget | — |
 - Failure taxonomy over the 9 scored harness failures (7 transcript-triaged
   via subagent analysis): release 3, transport 2, empty_grasp 1,
   grounding 1. Localization is NOT the weak link (one grounding failure in
@@ -209,23 +229,44 @@ Day 7 entry and `day7_triage.md` §1–2 for the corrected matrix
 
 - `track/analysis/compare.py` (TDD, 8 tests; suite 115 green): paired
   table with Wilson 95% intervals, complete-pairs-only aggregation,
-  infra excluded, duplicate detection. Aggregate direct 5/20
-  [0.11, 0.47] vs harness 11/20 [0.34, 0.74] — intervals barely
-  overlap at n=20.
+  infra excluded, duplicate detection. Frozen output:
+
+  | cell | direct k/n [Wilson 95%] | harness k/n [Wilson 95%] |
+  |---|---|---|
+  | libero_goal_swap_t2 | 0/5 [0.00, 0.43] | 3/5 [0.23, 0.88] |
+  | libero_goal_task_t2 | 1/5 [0.04, 0.62] | 1/5 [0.04, 0.62] |
+  | libero_object_swap_t2 | 4/5 [0.38, 0.96] | 2/5 [0.12, 0.77] |
+  | libero_spatial_task_t2 | 0/5 [0.00, 0.43] | 5/5 [0.57, 1.00] |
+  | **aggregate (complete pairs)** | **5/20 [0.11, 0.47]** | **11/20 [0.34, 0.74]** |
+
 - Mechanism metrics from existing traces (`day8_mechanism.md`):
   **10 of 11 harness successes fire the predicate during an analytic
   primitive** (9 release, 1 move_to; 1 pi0_pick) — the paper's division
-  of labor, visible in artifacts; median 1 pi0 call per success vs
-  direct's 120-chunk budget; success/failure turn distributions
-  disjoint (≤28 vs ≥47).
+  of labor, visible in artifacts. VLA-invocation profile:
+
+  | group | vla calls min/med/max | analytic calls | turns |
+  |---|---|---|---|
+  | harness success (n=11) | 1 / 1 / 2 | 3 / 7 / 9 | 17 / 21 / 28 |
+  | harness failure (n=9) | 2 / 3 / 5 | 12 / 21 / 25 | 47 / 60 / 60 |
+  | direct (n=20, chunk calls) | 22 / 120 / 120 | — | — |
+
 - **Predeclared hidden-memory ablation (registry v2-hiddenmem,
-  registered before any rollout): 5/5** vs with-memory 2/5 and direct
-  4/5 on Object-S — H1 confirmed: the released TSM's carry-height
-  ballistic-release rule causes the regression; all memory-free runs
-  descended and released at eef z 0.18–0.29 (the with-memory failure
-  released at 0.334 and bounced out). Seed 4 solved by NEITHER frozen
-  arm fell to the memory-free harness in 18 turns. Scope: one
-  implicated cell; not a general "memory hurts" claim.
+  registered before any rollout): 5/5 — H1 confirmed.** The released
+  TSM's carry-height ballistic-release rule causes the Object-S
+  regression; the memory-free planner descends to seat before release:
+
+  | seed | direct | harness + memory | hidden-memory | terminal eef z |
+  |---|---|---|---|---|
+  | 1 | ✓ | ✗ (release z=0.334, bounced out) | **✓** 22 turns | 0.214 |
+  | 2 | ✓ | ✓ | **✓** 26 turns | 0.187 |
+  | 3 | ✓ | ✗ | **✓** 15 turns | 0.285 |
+  | 4 | ✗ | ✗ | **✓** 18 turns | 0.219 |
+  | 5 | ✓ | ✓ | **✓** 19 turns | 0.180 |
+
+  Seed 4 — solved by NEITHER frozen arm — fell to the memory-free
+  harness in 18 turns. Scope: one implicated cell; not a general
+  "memory hurts" claim (the with-memory harness produced all 8 rescues
+  on the hard cells).
 - Ablation integrity (methodology findings, quarantined + tripwired):
   attempt 1 — the planner HUNTED for its hidden memory via repo-wide
   find and read the stash back; attempt 2 — HF download cache leaked
