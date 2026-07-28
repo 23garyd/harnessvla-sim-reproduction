@@ -141,6 +141,17 @@ def test_resolve_mapping():
         ("valid_failure", "planner_finished_without_predicate")
 
 
+def test_predicate_is_cumulative(tmp_path):
+    # A transient mid-episode True must count as success even if later
+    # entries read False (rlinf success_once semantics).
+    d = write_rpent_dir(tmp_path, terminated=False)
+    states = json.loads((d / "states.json").read_text())
+    states[2]["libero_terminated"] = True
+    (d / "states.json").write_text(json.dumps(states))
+    o = harness_lib.parse_harness_outcome(d)
+    assert o["success"] is True
+
+
 def test_infra_row_from_empty_outcome():
     row = harness_lib.build_harness_result_row(
         outcome=harness_lib.empty_outcome(), validity="infra_failure",
@@ -178,8 +189,8 @@ def test_meta_and_row_survive_ledger(tmp_path):
 ```python
 """Harness-condition run records + outcome parsing (experiment v2).
 
-Success comes ONLY from the last states.json entry's `libero_terminated`
-(the benchmark predicate). Planner self-reports (`finish.status`) are kept
+Success comes ONLY from `libero_terminated` in states.json (cumulative
+across entries — the benchmark predicate). Planner self-reports (`finish.status`) are kept
 as diagnostics and never score. All records go through
 track.analysis.schemas so build_ledger consumes harness run dirs unchanged.
 """
@@ -253,7 +264,10 @@ def parse_harness_outcome(rpent_dir):
     t = json.loads(transcripts[0].read_text())
     stats = t.get("stats") or {}
     return {
-        "success": bool(states[-1].get("libero_terminated")),
+        # Cumulative like rlinf's success_once |= terminations: a transient
+        # True scores even if a driver stepped past it (rpent halts on first
+        # True today, so this is equivalent on all real artifacts).
+        "success": any(bool(e.get("libero_terminated")) for e in states),
         "steps": steps,
         "turns": int(stats.get("turns_used", 0) or 0),
         "vla_act_calls": vla_calls,
@@ -294,7 +308,7 @@ def build_harness_result_row(*, outcome, validity, terminal_reason,
     return validate_result_row(row)
 ```
 
-- [ ] **Step 4: Run to verify.** File: 7 PASS. Full suite: 90 passed.
+- [ ] **Step 4: Run to verify.** File: 8 PASS. Full suite: 91 passed.
 - [ ] **Step 5: Commit** `git add track/launchers/harness_lib.py track/tests/test_harness_lib.py && git commit -m "feat: harness_lib - v2 records, predicate-only outcome parsing"`
 
 ---
@@ -472,7 +486,7 @@ the batch runner must never leave a shared direct-condition VLA server up
 across a harness launch (Task 4 sequences direct phase → stop shared VLA →
 harness phase).
 
-- [ ] **Step 2: Gates.** `PYTHONPATH= .venv-dev/bin/python -m py_compile track/launchers/run_harness.py && echo COMPILE-OK`; full suite still 90.
+- [ ] **Step 2: Gates.** `PYTHONPATH= .venv-dev/bin/python -m py_compile track/launchers/run_harness.py && echo COMPILE-OK`; full suite still 91.
 - [ ] **Step 3: Commit** `git add track/launchers/run_harness.py && git commit -m "feat: run_harness - v2-pinned rpent wrapper with wall-cap kill and stray sweep"`
 
 ---
@@ -858,7 +872,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-- [ ] **Step 4: Run to verify.** File: 8 PASS. Full suite: 98 passed. py_compile batch_runner.
+- [ ] **Step 4: Run to verify.** File: 8 PASS. Full suite: 99 passed. py_compile batch_runner.
 - [ ] **Step 5: Commit** `git add track/launchers/batch_runner.py track/tests/test_batch_runner.py && git commit -m "feat: batch runner - resume without overwrite, infra retry cap, raw verification"`
 
 ---
@@ -893,7 +907,7 @@ def test_main_print_separates_scored_and_infra(tmp_path, capsys):
           f"{incomplete} incomplete)")
 ```
 
-- [ ] **Step 4: Verify.** Ledger file: 11 PASS. Full suite: 99 passed.
+- [ ] **Step 4: Verify.** Ledger file: 11 PASS. Full suite: 100 passed.
 - [ ] **Step 5: Commit** `git add track/analysis/build_ledger.py track/tests/test_build_ledger.py && git commit -m "fix: ledger print separates scored from infra rows"`
 
 ---
@@ -948,7 +962,7 @@ Expected: row `success` equals the raw predicate (the runner already verified th
 
 ### Task 7: Wrap-up
 
-- [ ] **Step 1:** Full dev suite → 99 passed; `git status --porcelain` clean.
+- [ ] **Step 1:** Full dev suite → 100 passed; `git status --porcelain` clean.
 - [ ] **Step 2:** Merge + push: `git checkout main && git merge day6-batch-runner --no-edit && git push origin main && git branch -d day6-batch-runner`
 - [ ] **Step 3:** Tag: `git tag -a day6-batch-runner -m "Day 6: manifest-driven batch runner, gate passed (resume without overwrite, raw-verified rows)" && git push origin day6-batch-runner`
 - [ ] **Step 4:** Append the Day-6 entry to `track/registry/progress_log.md` + registry change-log row; commit + push.
