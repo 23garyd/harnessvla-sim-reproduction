@@ -342,3 +342,35 @@ Day 7 entry and `day7_triage.md` §1–2 for the corrected matrix
 - Gate: all 3 regression pairs explained from raw artifacts, mechanism
   claims adversarially cross-checked (one revised in writing), synthesis
   frozen. ✅ Next (Day 10): MVP freeze + report skeleton.
+
+## Day 10 — MVP freeze & reproduction report (2026-07-28, tag `day10-mvp-freeze`)
+
+- **MVP frozen** (`track/registry/mvp_freeze.md`): core ledger 46 rows
+  (40 scored + 6 infra, sha256 `88450c6b…4bed905`), ablation ledger 5
+  rows (sha256 `9aa679f5…365a308`), 3.4 GB raw artifacts, RPent pin
+  `6e4ba18` clean, 115 tests green. Nothing in the core may be re-run
+  or re-scored; extensions go to new registry versions.
+- **Reproduction report written** (`track/report/reproduction_report.md`):
+  claim → setup → frozen protocol → results → mechanism → failure
+  analysis → ablation + Day-9 correction → synthesis → deviations/
+  limitations (7) → artifact index → verdict. Frozen headline tables:
+
+  | cell | direct [Wilson 95%] | harness [Wilson 95%] | paper anchor |
+  |---|---|---|---|
+  | Spatial-T | 0/5 [0.00, 0.43] | **5/5** [0.57, 1.00] | 42→94 reproduced |
+  | Goal-S | 0/5 [0.00, 0.43] | **3/5** [0.23, 0.88] | 42→87 gain |
+  | Goal-T | 1/5 [0.04, 0.62] | 1/5 [0.04, 0.62] | 45→87 NOT reproduced at pin |
+  | Object-S | 4/5 [0.38, 0.96] | **2/5** [0.12, 0.77] | 78→90 inverted |
+  | **aggregate** | **5/20 [0.11, 0.47]** | **11/20 [0.34, 0.74]** | direction reproduced |
+
+  Verdict — reproduced: aggregate direction, Spatial-T full amplitude,
+  sparse-VLA division of labor, structural-prior memory behavior. Not
+  reproduced at this pin: Goal-T gain (no grab-and-hold VLA mode vs
+  pi0's place reflex). New findings: reference-coordinate anchoring
+  (grep-invisible memory leak), agent memory-hunting + 2 leak channels
+  with working countermeasure, release-x (not z) as the basket-placement
+  failure variable, scene-inverted memory guidance.
+- HANDOVER.md updated to Day-10 state (entry points for mentor).
+- Gate (plan Day-10): ≥40 paired scored rollouts ✅ (40), mentor can
+  trace claim→code→artifacts ✅ (mvp_freeze.md provenance chain),
+  report delivered ✅.
