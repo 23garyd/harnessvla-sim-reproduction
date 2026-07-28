@@ -15,6 +15,7 @@ def valid_manifest():
                 "condition": "direct",
                 "suite": "libero_goal_task",
                 "task": "task_a",
+                "task_id": 2,
                 "seeds": [
                     {"seed": 0, "bootstrap_only": True},
                     {"seed": 1, "bootstrap_only": False},
@@ -97,4 +98,11 @@ def test_empty_seeds_fails():
     m = valid_manifest()
     m["cells"][0]["seeds"] = []
     with pytest.raises(ValueError, match="seeds"):
+        manifests.validate_manifest(m)
+
+
+def test_missing_task_id_fails():
+    m = valid_manifest()
+    del m["cells"][0]["task_id"]
+    with pytest.raises(ValueError, match="task_id"):
         manifests.validate_manifest(m)

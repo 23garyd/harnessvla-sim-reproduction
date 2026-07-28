@@ -38,6 +38,8 @@ def validate_manifest(manifest):
                 raise ValueError(f"{where}: missing required key '{key}'")
             if not isinstance(cell[key], str):
                 raise ValueError(f"{where}: key '{key}' must be str")
+        if not isinstance(cell.get("task_id"), int) or isinstance(cell.get("task_id"), bool):
+            raise ValueError(f"{where}: 'task_id' must be int")
         if not isinstance(cell.get("seeds"), list) or not cell["seeds"]:
             raise ValueError(f"{where}: 'seeds' must be a non-empty list")
         cell_id = (cell["condition"], cell["suite"], cell["task"])
