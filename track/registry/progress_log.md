@@ -125,3 +125,29 @@ Detailed evidence lives in the files each entry points to.
   the subscription) → then Day 7 triage + Day 8 compare.py. Note for
   compare.py: harness wall_seconds includes ~3–4 min server boot (launcher
   clock) — not like-for-like with direct wall columns.
+
+## Day 6 evening — PAIRED CORE MATRIX COMPLETE (2026-07-28, attended)
+
+19/19 harness cells launched, raw-verified, 0 infra failures; ledger 42 rows
+(40 scored = the Day-10 "≥40 paired scored rollouts" core requirement, met).
+
+| cell | direct | harness | paper anchor |
+|---|---|---|---|
+| libero_spatial_task_t2 (Spatial-T) | 0/5 | **5/5** | 42→94 — reproduced at full amplitude |
+| libero_goal_swap_t2 (Goal-S) | 0/5 | **3/5** | 42→87 — clear gain |
+| libero_goal_task_t2 (Goal-T) | 1/5 | 1/5 | 45→87 — NO gain; turn budget (60) bound on 3/5 seeds |
+| libero_object_swap_t2 (Object-S) | 4/5 | **0/5** | 78→90 — INVERTED: harness hurt the strong cell |
+| **aggregate** | **5/20 (25%)** | **9/20 (45%)** | 50.0→82.4 — direction reproduced |
+
+Paired flips: 9 cells direct✗→harness✓, 5 cells direct✓→harness✗, 6 both-fail.
+Net +4 with strong per-cell structure: the harness closes the hardest cells
+(Spatial-T, Goal-S) and DAMAGES the cell where the frozen VLA was already
+strong — a sharper version of the paper's own Object-S small-gap caveat.
+
+Day-7 triage priorities: (1) Object-S harness collapse — 0/5 scored vs 2/3 in
+the pre-freeze pilots under identical pins (planner variance? regime text?
+examine transcripts + finish summaries); (2) Goal-T turn-budget pressure —
+was 60 turns the binding constraint (3/5 turn_budget rows say yes); (3) the
+5 direct✓→harness✗ pairs as case studies. NO retuning on eval seeds — the
+matrix is frozen; findings go to the deviation/limitations sections and, if
+warranted, a predeclared ablation.
