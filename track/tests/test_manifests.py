@@ -121,3 +121,23 @@ def test_ablation_hiddenmem_manifest_loads_and_scores_5_cells():
     assert all(c[:3] == ("harness", "libero_object_swap",
                          "libero_object_swap_t2") for c in cells)
     assert sorted(c[3] for c in cells) == [1, 2, 3, 4, 5]
+
+
+def test_ext_v3_manifests_load_and_form_4x2_grid():
+    from pathlib import Path
+    mdir = Path(__file__).resolve().parents[1] / "manifests"
+    md = manifests.load_manifest(mdir / "ext_v3_direct.json")
+    mh = manifests.load_manifest(mdir / "ext_v3_harness.json")
+    assert md["exp_version"] == mh["exp_version"] == "v3"
+    assert md["budgets"]["max_steps"] == 600
+    assert mh["budgets"]["max_steps"] == 1200
+    d_cells = manifests.scored_cells(md)
+    h_cells = manifests.scored_cells(mh)
+    suites = {"libero_object_task", "libero_spatial_swap",
+              "libero_10_task", "libero_10_swap"}
+    assert {c[1] for c in d_cells} == {c[1] for c in h_cells} == suites
+    assert len(d_cells) == len(h_cells) == 20  # 4 suites x s1-s5
+    # every harness cell carries a seed-0 bootstrap entry
+    for cell in mh["cells"]:
+        assert any(e["seed"] == 0 and e["bootstrap_only"]
+                   for e in cell["seeds"])
