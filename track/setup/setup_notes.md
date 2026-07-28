@@ -255,3 +255,104 @@ letting `sam3_server` start.
 
 **Pointers:** run dir `artifacts/harness/day4_object_swap_t2_s0_r2/`; trace +
 audits `track/traces/day4_object_swap_t2_s0_annotated.md`.
+
+## Day-6 gate (2026-07-27)
+
+**Gate statement:** "a stopped batch resumes without overwriting evidence,
+and summaries match raw outcomes for every pilot trial." **PASSED** — all
+five Task-6 steps executed on branch `day6-batch-runner`, live GPU (GPU 0,
+idle beforehand) + `claude-opus-4-8` planner via `claude_code` backend
+(subscription billing, ANTHROPIC/OPENAI keys stripped from the child env).
+
+**Step 1 — resume proof over existing evidence (no spend):**
+
+```
+$ PYTHONPATH= .venv/bin/python track/launchers/batch_runner.py \
+    --manifests track/manifests/core_v1.json --dry-run
+pin check OK: RPent at 6e4ba1805a459d74ad53569e833bae7ae2c59985, worktree clean
+core_v1.json: 20 scored cells, 20 already valid, 0 pending, 0 exhausted
+queue done: 0 launched this invocation; ledger rebuilt (22 rows)
+```
+
+The completed direct arm is honored end to end — nothing re-runs.
+
+**Step 2 — one live harness cell (limit-stopped batch):** manifest order
+selected `libero_spatial_task` t2 seed 1 (harness on the weakest direct
+cell), queue record written to
+`artifacts/queues/queue_20260728T043553.json` (20 planned cells, limit 1).
+Rollout ran ~7.5 min (servers boot + planner episode); result:
+
+```json
+{
+  "run_dir": "artifacts/runs/v2/harness/libero_spatial_task_t2/1/20260728T043554",
+  "success": true,
+  "terminal_reason": "benchmark_predicate",
+  "validity": "success",
+  "counts": {
+    "steps": 139,
+    "turns": 24,
+    "vla_act_calls": 1,
+    "analytic_calls": 9
+  },
+  "wall_seconds": 446.4,
+  "planner_finish_status": "success"
+}
+```
+
+Runner printed `verified: validity=success reason=benchmark_predicate` and
+`queue done: 1 launched this invocation; ledger rebuilt (23 rows)` — validity
+is not `infra_failure`, so the cell passes the gate.
+
+**Step 3 — resume-after-stop proof (no spend):**
+
+```
+$ PYTHONPATH= .venv/bin/python track/launchers/batch_runner.py \
+    --manifests track/manifests/harness_v2.json --dry-run
+pin check OK: RPent at 6e4ba1805a459d74ad53569e833bae7ae2c59985, worktree clean
+harness_v2.json: 20 scored cells, 1 already valid, 19 pending, 0 exhausted
+queue done: 0 launched this invocation; ledger rebuilt (23 rows)
+```
+
+`libero_spatial_task_t2` seed 1 (the Step-2 cell) is now `already valid` and
+is NOT among the 19 listed pending cells — the limit-stopped batch resumed
+and skipped completed work.
+
+No-overwrite listing:
+
+```
+$ ls artifacts/runs/v2/harness/libero_spatial_task_t2/1/
+20260728T043554
+```
+
+Exactly one timestamp directory — no overwrite.
+
+**Step 4 — summary-vs-raw audit of the pilot row:**
+
+```
+$ cat artifacts/runs/v2/harness/libero_spatial_task_t2/1/*/result_row.json
+{
+  "success": true,
+  "terminal_reason": "benchmark_predicate",
+  "validity": "success",
+  "counts": {"steps": 139, "turns": 24, "vla_act_calls": 1, "analytic_calls": 9},
+  "wall_seconds": 446.4,
+  "planner_finish_status": "success"
+}
+$ .venv/bin/python -c "
+import json, glob
+d = sorted(glob.glob('artifacts/runs/v2/harness/libero_spatial_task_t2/1/*/rpent/states.json'))[-1]
+print('raw predicate:', json.load(open(d))[-1].get('libero_terminated'))"
+raw predicate: True
+```
+
+Row `success: true` agrees with the raw `libero_terminated: True` predicate
+(the runner's own `verify_row` already checked this pre-proceed; this is the
+human-visible double check).
+
+**Post-pilot checks:** no stray `env_server|vla_server|sam3_server`
+processes; GPU 0 idle after the run; `git -C RPent status --porcelain` clean
+(pin gate intact, commit `6e4ba1805a459d74ad53569e833bae7ae2c59985`).
+
+**Pointers:** queue record
+`artifacts/queues/queue_20260728T043553.json`; pilot run dir
+`artifacts/runs/v2/harness/libero_spatial_task_t2/1/20260728T043554/`.
