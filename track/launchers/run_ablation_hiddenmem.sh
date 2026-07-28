@@ -17,17 +17,22 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # Defense-in-depth: run_harness strips billing keys itself, but every
 # launcher that reaches the planner also goes through run_planner.
 source "$REPO/track/launchers/planner_env.sh"
-RES="$REPO/RPent/resources/libero"
+RES="$REPO/RPent/resources"
 MANIFEST="$REPO/track/manifests/ablation_hiddenmem_v2.json"
 OUT_ROOT="$REPO/artifacts/ablation/runs"
 STASH_DIR="$(mktemp -d "${TMPDIR:-/tmp}/tsm_ablation.XXXXXXXX")"
 STASH_TAR="$STASH_DIR/tsm.tar"
+# libero/memory + the seed-0 reference are the condition itself; the HF
+# download cache leaks the note FILENAMES via *.lock/*.metadata (attempt-2
+# seed-4 lesson), so it goes into the stash too.
+STASH_MEMBERS=(libero/memory libero/results_object_pert)
+[ -d "$RES/.cache" ] && STASH_MEMBERS+=(.cache)
 
 restore() {
     if [ -f "$STASH_TAR" ]; then
         tar -C "$RES" -xf "$STASH_TAR"
         rm -rf "$STASH_DIR"
-        echo "restored memory + results_object_pert from stash tar"
+        echo "restored stashed members: ${STASH_MEMBERS[*]}"
     fi
     bash "$REPO/track/setup/pin_check.sh"
 }
@@ -49,18 +54,19 @@ tripwire() {
     fi
 }
 
-for d in memory results_object_pert; do
+for d in libero/memory libero/results_object_pert; do
     [ -d "$RES/$d" ] || { echo "FATAL: $RES/$d missing before stash" >&2; exit 1; }
 done
-tar -C "$RES" -cf "$STASH_TAR" memory results_object_pert
-rm -rf "$RES/memory" "$RES/results_object_pert"
-echo "stashed memory + results_object_pert -> opaque tar outside repo"
+tar -C "$RES" -cf "$STASH_TAR" "${STASH_MEMBERS[@]}"
+for d in "${STASH_MEMBERS[@]}"; do rm -rf "${RES:?}/$d"; done
+echo "stashed -> opaque tar outside repo: ${STASH_MEMBERS[*]}"
 
 # Block rpent's HF auto-resync of the stashed memory dataset for the
 # children of this shell; planner keys are stripped by run_harness itself.
 export HF_HUB_OFFLINE=1
 
-for seed in 1 2 3 4 5; do
+if [ $# -gt 0 ]; then SEEDS=("$@"); else SEEDS=(1 2 3 4 5); fi
+for seed in "${SEEDS[@]}"; do
     echo "=== ablation hidden-memory libero_object_swap t2 seed $seed ==="
     PYTHONPATH= run_planner "$REPO/.venv/bin/python" \
         -m track.launchers.run_harness \
