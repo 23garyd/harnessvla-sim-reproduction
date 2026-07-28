@@ -109,6 +109,29 @@ def test_parse_max_turns_error_is_not_api_error(tmp_path):
     assert o["planner_api_error"] is None
 
 
+def test_parse_detects_planner_timeout(tmp_path):
+    # Shape verbatim from goal_task s2 (2026-07-28): the SDK emits a
+    # dedicated stream record when planner_timeout_s expires.
+    d = write_rpent_dir(tmp_path, terminated=False, turns=58, stream_records=[
+        {"type": "timeout", "message": "Claude Agent SDK timed out after 1200s"}])
+    o = harness_lib.parse_harness_outcome(d)
+    assert o["planner_timed_out"] is True
+    assert o["planner_api_error"] is None
+    d2 = write_rpent_dir(tmp_path / "clean")
+    assert harness_lib.parse_harness_outcome(d2)["planner_timed_out"] is False
+
+
+def test_resolve_planner_timeout_is_budget():
+    # planner_timeout_s is a pinned v2 regime bound -> budget, not infra.
+    o = {"success": False, "steps": 664, "turns": 58, "wall_s": 1368.2,
+         "planner_timed_out": True}
+    assert harness_lib.resolve_harness_outcome(o, BUDGETS) == \
+        ("budget_exhausted", "planner_timeout")
+    o["success"] = True
+    assert harness_lib.resolve_harness_outcome(o, BUDGETS) == \
+        ("success", "benchmark_predicate")
+
+
 def test_resolve_planner_api_error_is_infra():
     o = {"success": False, "steps": 0, "turns": 1, "wall_s": 167.2,
          "planner_api_error": "rate_limit: You've hit your session limit"}

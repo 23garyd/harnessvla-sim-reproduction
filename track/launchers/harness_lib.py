@@ -46,26 +46,35 @@ def empty_outcome():
     """Outcome shell for infra rows when no artifacts exist."""
     return {"success": False, "steps": 0, "turns": 0, "vla_act_calls": 0,
             "analytic_calls": 0, "wall_s": 0.0, "planner_finish_status": None,
-            "planner_api_error": None}
+            "planner_api_error": None, "planner_timed_out": False}
 
 
-def _planner_api_error(rpent_dir):
-    """Scan the raw planner stream for backend-level errors (e.g. the
-    2026-07-28 subscription session limit, surfaced as a synthetic
-    AssistantMessage with error="rate_limit"). Bare {"type": "error"}
-    records are NOT counted: rpent uses those for budget outcomes like
-    max-turns. Returns a short evidence string, or None."""
+def _scan_planner_stream(rpent_dir):
+    """Scan the raw planner stream for terminal conditions the transcript
+    does not record (both observed 2026-07-28):
+    - backend-level errors (subscription session limit), surfaced as a
+      synthetic AssistantMessage with error="rate_limit" -> api_error;
+    - the SDK's planner_timeout_s expiry, a dedicated {"type": "timeout"}
+      record -> timed_out.
+    Bare {"type": "error"} records are NOT counted: rpent uses those for
+    budget outcomes like max-turns."""
+    out = {"api_error": None, "timed_out": False}
     for stream in sorted(rpent_dir.glob("*.stream.jsonl")):
         for line in stream.read_text().splitlines():
             try:
                 rec = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if rec.get("type") == "AssistantMessage" and rec.get("error"):
+            if (out["api_error"] is None
+                    and rec.get("type") == "AssistantMessage"
+                    and rec.get("error")):
                 texts = [c.get("text", "") for c in rec.get("content") or []
                          if isinstance(c, dict)]
-                return f"{rec['error']}: {' '.join(texts).strip()}"[:500]
-    return None
+                out["api_error"] = \
+                    f"{rec['error']}: {' '.join(texts).strip()}"[:500]
+            elif rec.get("type") == "timeout":
+                out["timed_out"] = True
+    return out
 
 
 def parse_harness_outcome(rpent_dir):
@@ -94,6 +103,7 @@ def parse_harness_outcome(rpent_dir):
         raise ValueError(f"{rpent_dir}: no transcript_*.json")
     t = json.loads(transcripts[0].read_text())
     stats = t.get("stats") or {}
+    stream_scan = _scan_planner_stream(rpent_dir)
     return {
         # Cumulative like rlinf's success_once |= terminations: a transient
         # True scores even if a driver stepped past it (rpent halts on first
@@ -105,7 +115,8 @@ def parse_harness_outcome(rpent_dir):
         "analytic_calls": analytic_calls,
         "wall_s": float(stats.get("elapsed_s", 0.0) or 0.0),
         "planner_finish_status": (t.get("finish") or {}).get("status"),
-        "planner_api_error": _planner_api_error(rpent_dir),
+        "planner_api_error": stream_scan["api_error"],
+        "planner_timed_out": stream_scan["timed_out"],
     }
 
 
@@ -124,6 +135,10 @@ def resolve_harness_outcome(outcome, budgets):
         return "budget_exhausted", "step_budget"
     if outcome["wall_s"] >= budgets["max_wall_seconds"]:
         return "budget_exhausted", "wall_time"
+    # planner_timeout_s is a pinned v2 regime bound, so its expiry is a
+    # budget outcome (the run stays scored), unlike a planner API error.
+    if outcome.get("planner_timed_out"):
+        return "budget_exhausted", "planner_timeout"
     return "valid_failure", "planner_finished_without_predicate"
 
 
