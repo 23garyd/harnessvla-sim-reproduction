@@ -4,6 +4,13 @@
 # otherwise-identical v2 pins, restores memory by trap, verifies the pin.
 # Artifacts are isolated under artifacts/ablation/ and never enter the
 # core paired ledger.
+#
+# Attempt-1 lesson (2026-07-28): a plain stash under artifacts/ was
+# DISCOVERED by the planner via repo-wide `find` and read back — the
+# condition silently un-hid itself. The stash is therefore (a) a single
+# opaque tar, (b) outside the repo in a 0700 mktemp dir, and (c) every
+# finished run is tripwire-grepped for stash/memory references; any hit
+# aborts the queue and marks the run invalid.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -11,28 +18,43 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # launcher that reaches the planner also goes through run_planner.
 source "$REPO/track/launchers/planner_env.sh"
 RES="$REPO/RPent/resources/libero"
-STASH="$REPO/artifacts/ablation/stash"
 MANIFEST="$REPO/track/manifests/ablation_hiddenmem_v2.json"
 OUT_ROOT="$REPO/artifacts/ablation/runs"
+STASH_DIR="$(mktemp -d "${TMPDIR:-/tmp}/tsm_ablation.XXXXXXXX")"
+STASH_TAR="$STASH_DIR/tsm.tar"
 
 restore() {
-    for d in memory results_object_pert; do
-        if [ -d "$STASH/$d" ]; then
-            mv "$STASH/$d" "$RES/$d"
-            echo "restored: $RES/$d"
-        fi
-    done
+    if [ -f "$STASH_TAR" ]; then
+        tar -C "$RES" -xf "$STASH_TAR"
+        rm -rf "$STASH_DIR"
+        echo "restored memory + results_object_pert from stash tar"
+    fi
     bash "$REPO/track/setup/pin_check.sh"
 }
-trap restore EXIT
+trap restore EXIT TERM INT
 
-mkdir -p "$STASH" "$OUT_ROOT"
+tripwire() {
+    # $1 = run dir. Any reference to the stash location or to a
+    # memory-note filename in the planner-visible logs means the
+    # hidden-memory condition failed: mark and abort.
+    local hits
+    hits=$(grep -rl -e "$STASH_DIR" -e "tall_item_first_basket_placement" \
+        "$1/launcher.log" "$1/rpent/run.log" "$1"/rpent/*.stream.jsonl \
+        2>/dev/null || true)
+    if [ -n "$hits" ]; then
+        echo "TRIPWIRE: hidden-memory condition violated in $1" >&2
+        echo "$hits" >&2
+        printf 'condition violated — see queue log\n' > "$1/INVALID"
+        return 1
+    fi
+}
+
 for d in memory results_object_pert; do
     [ -d "$RES/$d" ] || { echo "FATAL: $RES/$d missing before stash" >&2; exit 1; }
-    [ -e "$STASH/$d" ] && { echo "FATAL: stale stash $STASH/$d" >&2; exit 1; }
-    mv "$RES/$d" "$STASH/$d"
-    echo "stashed: $d"
 done
+tar -C "$RES" -cf "$STASH_TAR" memory results_object_pert
+rm -rf "$RES/memory" "$RES/results_object_pert"
+echo "stashed memory + results_object_pert -> opaque tar outside repo"
 
 # Block rpent's HF auto-resync of the stashed memory dataset for the
 # children of this shell; planner keys are stripped by run_harness itself.
@@ -45,6 +67,8 @@ for seed in 1 2 3 4 5; do
         --suite libero_object_swap --task-id 2 --seed "$seed" \
         --manifest "$MANIFEST" --out-root "$OUT_ROOT" || \
         echo "WARNING: seed $seed exited infra (row retained); continuing"
+    latest="$(ls -td "$OUT_ROOT/v2-hiddenmem/harness/libero_object_swap_t2/$seed"/2* | head -1)"
+    tripwire "$latest"
 done
 
 PYTHONPATH= "$REPO/.venv/bin/python" -m track.analysis.build_ledger \
