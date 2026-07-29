@@ -374,3 +374,49 @@ Day 7 entry and `day7_triage.md` §1–2 for the corrected matrix
 - Gate (plan Day-10): ≥40 paired scored rollouts ✅ (40), mentor can
   trace claim→code→artifacts ✅ (mvp_freeze.md provenance chain),
   report delivered ✅.
+
+## Day 11 — extension design & 8-cell matrix complete (2026-07-28→29, tag `day11-extension-matrix`)
+
+- Extension question chosen from measured bottlenecks: **broader task
+  coverage** (ablation = Day 12's charter, repeatability = Day 14's).
+  Registry v3: +4 suites completing the 4×2 family/perturbation grid
+  (4 redirection vs 4 swap) for Day-12. Hard budget pre-registered from
+  measured costs (≤52 launches, ≤10 h, ≤12 harness/session window,
+  ≤5 GB) — actuals landed inside every cap.
+- Family pilots found 2 real infra issues before the queue: (1)
+  LIBERO-Pro ships a valid-but-EMPTY init-state file for 10_task t2
+  (5th missing-package-data bug) → cell moved t2→t3 pre-queue,
+  recorded; (2) batch_runner never passed each cell's source manifest
+  to the launchers (core queue had worked only because its cells
+  matched the launchers' defaults) → fixed with tests (118 green).
+- Queue ran in 2 planner windows 3 h apart (session-limit rule): 28 +
+  8 cells, all raw-verified, **0 infra failures, 0 rate-limit hits**.
+- **EXTENSION RESULTS (40 new scored rollouts; ledger 87 rows)**:
+
+  | cell | direct | harness | reading |
+  |---|---|---|---|
+  | libero_object_task_t2 (Object-T) | **5/5** | **5/5** | both arms at ceiling — perturbation harmless here |
+  | libero_spatial_swap_t2 (Spatial-S) | **5/5** | **5/5** | both at ceiling — unlike Spatial-T where direct was 0/5 |
+  | libero_10_task_t3 (Long-T) | 0/5 | 0/5 | wall for both: direct all step_budget; harness 2× planner_timeout + 3× planner finished w/o predicate |
+  | libero_10_swap_t2 (Long-S) | 0/5 | **2/5** | harness rescues 2 long-horizon seeds (s3, s4); rest turn_budget/finished |
+
+- **COMBINED 8-CELL MATRIX (80 scored rollouts, 40 pairs)**:
+
+  | | direct | harness |
+  |---|---|---|
+  | aggregate | **15/40 [0.24, 0.53]** | **23/40 [0.42, 0.71]** |
+
+  Paired flips: 11 rescued / 3 regressed / 12 both-pass / 14 both-fail
+  (net +8). Direction unchanged with doubled n; the regressed set is
+  still confined to the two core cells (Object-S anchoring, Goal-T s2).
+- Observations for Days 12–14: (a) perturbation difficulty is heavily
+  task-instance-dependent (both new short-horizon cells are at ceiling
+  for BOTH arms — they will carry no signal in the Day-12 ablation;
+  the asymmetry test's discriminating cells are goal/object/10 swap vs
+  goal/10 task); (b) LIBERO-10 stresses the pinned 1200 s planner
+  timeout (2 rows) — a regime limitation to report, not retune;
+  (c) direct-vs-harness gap on the extension is +2 cells only — the
+  harness's value concentrates where perception breaks, replicating
+  the core synthesis.
+- Gate: every added family piloted in both conditions ✅, queue inside
+  the hard budget ✅, all rows raw-verified ✅.
