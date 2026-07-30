@@ -172,8 +172,22 @@ bash track/launchers/run_ablation_hiddenmem.sh [4 5]
 5. Two **quarantined** ablation attempts kept as evidence, excluded from
    results: `artifacts/ablation/attempt1_condition_violated/`,
    `attempt2_seed4_condition_violated/`.
-6. Four Day-11 commits are authored `23garyd` (identity switched
-   afterward). Not rewritten — ask before touching pushed history.
+6. **History re-authored and republished (2026-07-29).** All 83 commits,
+   all 9 tags (including the 4 annotated taggers) and the identity
+   strings in this file were rewritten to `23garyd` via `git
+   filter-repo` (`--mailmap` + `--replace-text`); the track was pushed
+   to `github.com/23garyd/aspire-robot-stack` (private). The former
+   `nuPylot/harnessvla-sim` remote is no longer configured locally —
+   `garyd` is the only remote, and the two repos have diverged in both
+   identity and history, so **which one is canonical is undecided**.
+   Author/committer dates are unchanged and run provenance is
+   unaffected (`run_meta.json` keys on `rpent_commit` +
+   `checkpoint_sha256`, never this repo's SHAs), but **every commit SHA
+   changed**, so the 10 in-repo SHA citations in `risk_log.md` (15, 18),
+   `progress_log.md` (167, 168, 349, 350) and `day7_triage.md` (31, 34)
+   are now dangling and still need remapping. Pre-rewrite history
+   survives only in `/home/demo/harnessvla-prerewrite-20260729.bundle`
+   (local, never pushed).
 7. Upstream issue reports not yet filed (maintainer-gated path):
    reference absolutes act as confirmation anchors; `tall_item_first_
    basket_placement.md` bias note is **scene-inverted** for low-table
