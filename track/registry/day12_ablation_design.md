@@ -318,3 +318,49 @@ succeeds without) is the same sign and worth a Day-13 look.
 No exploration penalty on successes: no-memory 20–51 turns (median 26) vs
 with-memory 16–40 (median 23), same median of 1 pi0 call. The penalty is
 concentrated in the failures, which is exactly the timeout story.
+
+---
+
+## 11. FOLLOW-UP PREDECLARATION — the timeout confound (v5-longtimeout)
+
+**Frozen 2026-07-30, BEFORE any v5 rollout.** §3 and §10 are unchanged and
+remain frozen; this is a separate diagnostic arm, never pooled into the v4
+result.
+
+### Why
+
+Every v4 no-memory failure came back `planner_timeout` — `goal_swap` s1/s2/s3
+at 46/51/49 turns with 2 pi0 calls each, i.e. **below** the 60-turn cap and
+still working when the pinned 1200 s planner wall-clock cut them off. Those 3
+rows are the *entire* Δ_S = +0.10 signal. So the v4 result cannot presently
+distinguish:
+
+- **budget effect** — memory buys deliberation time, and without it the
+  planner exceeds a pinned clock; or
+- **capability effect** — memory enables re-grounding a swapped fixture, as
+  the paper claims.
+
+§10 reports the budget reading as the honest one. This arm tests it.
+
+### Condition
+
+Re-run exactly those 3 seeds with the planner timeout **doubled to 2400 s**
+(wall cap raised 2400 → 3600 s to stay above it). Everything else identical to
+v4: same zero-shot stash (Global Memory + all four TSM dirs + HF cache), same
+60-turn cap, same 1200-step budget, same checkpoint, same planner model, same
+seeds. **The planner wall-clock is the only change** — enforced by a test
+asserting v5's budgets differ from v4's in that key alone, and by
+`planner_timeout_s()` defaulting to the pinned 1200 s so v1–v4 stay
+bit-reproducible.
+
+### Predeclared three-way readout
+
+| outcome | reading |
+|---|---|
+| **H_budget** — ≥1 of 3 converts to success, or failures move off `planner_timeout` | the 1200 s bound was binding; v4's swap-side signal is substantially a clock artifact and §10's budget reading is confirmed |
+| **H_capability** — all 3 fail again, terminal reasons NOT `planner_timeout` (`turn_budget` / `valid_failure`) | the memory-free planner genuinely cannot solve these seeds; v4's signal reflects capability, and the paper's mechanism gains support |
+| **H_unbounded** — all 3 still `planner_timeout` at 2400 s | deliberation cost is large and unbounded at this pin; report as a regime limitation and **do not retune further** |
+
+Whatever the outcome, **the v4 numbers in §10 stand exactly as reported**.
+This arm changes their *interpretation*, not their values. n=3 — the readout
+is qualitative and directional, and no CI is claimed.

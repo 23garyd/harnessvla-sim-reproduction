@@ -1,0 +1,15 @@
+{
+  "exp_version": "v5-longtimeout",
+  "frozen": "2026-07-30 (Day-12 follow-up, predeclared BEFORE any rollout — see track/registry/day12_ablation_design.md §11). DIAGNOSTIC, NOT a result arm: every v4 no-memory failure came back planner_timeout at 46/51/49 turns with 2 pi0 calls — below the 60-turn cap, still working when the pinned 1200 s planner wall-clock cut them off. So the v4 signal (delta_S=+0.10) may be a BUDGET effect rather than the re-grounding failure the paper posits. This arm re-runs exactly those 3 seeds with the planner timeout doubled to 2400 s (wall cap raised to 3600 s to stay above it) and EVERYTHING else identical to v4: same zero-shot stash (Global Memory + all four TSM dirs + HF cache), same 60-turn cap, same 1200-step budget, same checkpoint, same planner model, same seeds. The ONLY change is the planner wall-clock bound. PREDECLARED READOUT — H_budget: >=1 of the 3 converts to success, or failures move off planner_timeout, meaning the 1200 s bound was binding and v4's swap-side signal is substantially a clock artifact. H_capability: all 3 fail again with terminal reasons NOT planner_timeout (turn_budget or valid_failure), meaning the memory-free planner genuinely cannot solve these seeds and v4's signal reflects capability. H_unbounded: all 3 still planner_timeout even at 2400 s, meaning the deliberation cost is large and unbounded at this pin — report as a regime limitation, do not retune further. These rows are NEVER pooled into the v4 result: different regime bound, different exp_version. The v4 numbers in day12_ablation_design.md §10 stand exactly as reported.",
+  "budgets": {"max_steps": 1200, "max_turns": 60, "max_wall_seconds": 3600,
+              "planner_timeout_s": 2400},
+  "caps": {"max_rollouts": 5, "max_tokens_per_rollout": 0},
+  "cells": [
+    {"condition": "harness", "suite": "libero_goal_swap",
+     "task": "libero_goal_swap_t2", "task_id": 2,
+     "anchor": "the 3 v4 seeds that died on planner_timeout (46/51/49 turns, 2 pi0 calls each); v4 no-memory scored 2/5 on this cell, with-memory 3/5",
+     "seeds": [{"seed": 1, "bootstrap_only": false},
+               {"seed": 2, "bootstrap_only": false},
+               {"seed": 3, "bootstrap_only": false}]}
+  ]
+}

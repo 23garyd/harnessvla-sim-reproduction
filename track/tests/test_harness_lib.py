@@ -204,3 +204,39 @@ def test_predicate_is_cumulative(tmp_path):
     (d / "states.json").write_text(json.dumps(states))
     o = harness_lib.parse_harness_outcome(d)
     assert o["success"] is True
+
+
+def test_planner_timeout_defaults_to_the_pinned_1200_when_absent():
+    """v1-v4 manifests carry no planner_timeout_s; their reproduction must be
+    bit-identical, so the pinned regime bound stays the default."""
+    budgets = {"max_steps": 1200, "max_turns": 60, "max_wall_seconds": 2400}
+    assert harness_lib.planner_timeout_s(budgets) == 1200
+    assert harness_lib.PLANNER_SETTINGS["planner_timeout_s"] == 1200
+
+
+def test_planner_timeout_can_be_overridden_by_a_manifest():
+    """v5 relaxes the bound to separate a budget effect from a capability
+    limit; the override is per-manifest, never a global edit."""
+    budgets = {"max_steps": 1200, "max_turns": 60, "max_wall_seconds": 3600,
+               "planner_timeout_s": 2400}
+    assert harness_lib.planner_timeout_s(budgets) == 2400
+
+
+def test_run_meta_records_the_timeout_actually_used_not_the_default():
+    """Provenance: a row must record the bound it ran under, or the v5 rows
+    would look like v4 rows in the artifacts."""
+    meta = harness_lib.build_harness_run_meta(
+        exp_version="v5-longtimeout", suite="libero_goal_swap", task_id=2,
+        seed=1,
+        budgets={"max_steps": 1200, "max_turns": 60,
+                 "max_wall_seconds": 3600, "planner_timeout_s": 2400},
+        rpent_commit="6e4ba18", checkpoint_sha256="abc", launch_command="x")
+    assert meta["planner_settings"]["planner_timeout_s"] == 2400
+
+
+def test_run_meta_still_records_1200_for_a_v4_style_manifest():
+    meta = harness_lib.build_harness_run_meta(
+        exp_version="v4", suite="libero_goal_swap", task_id=2, seed=1,
+        budgets={"max_steps": 1200, "max_turns": 60, "max_wall_seconds": 2400},
+        rpent_commit="6e4ba18", checkpoint_sha256="abc", launch_command="x")
+    assert meta["planner_settings"]["planner_timeout_s"] == 1200

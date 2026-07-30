@@ -32,7 +32,7 @@ def rpent_cmd(args, budgets, out_dir):
             "--planner", "claude_code", "--model", "claude-opus-4-8",
             "--max-turns", str(budgets["max_turns"]),
             "--planner-timeout-s",
-            str(harness_lib.PLANNER_SETTINGS["planner_timeout_s"]),
+            str(harness_lib.planner_timeout_s(budgets)),
             # +20 settle margin over the guide's 1200-step budget (Day-3 bug)
             "--max-episode-steps", str(budgets["max_steps"] + 20),
             "--output-dir", str(out_dir)]

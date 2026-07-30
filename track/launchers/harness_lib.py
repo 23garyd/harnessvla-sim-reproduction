@@ -23,6 +23,21 @@ PLANNER_SETTINGS = {
 VLA_PRIMITIVES = {"pi0_pick", "pi0_doubled"}
 
 
+def planner_timeout_s(budgets):
+    """The planner wall-clock bound for a run.
+
+    1200 s is the pinned v2 regime bound and stays the default, so v1-v4
+    manifests (which carry no such key) reproduce bit-identically. A manifest
+    may override it per-experiment -- introduced for v5-longtimeout, which
+    exists to separate "memory buys deliberation time" from "memory enables
+    re-grounding" after every v4 no-memory failure came back planner_timeout
+    at 46-51 turns, below the 60-turn cap. Overriding it is a
+    behaviour-affecting change and requires its own registry version.
+    """
+    return budgets.get("planner_timeout_s",
+                       PLANNER_SETTINGS["planner_timeout_s"])
+
+
 def build_harness_run_meta(*, exp_version, suite, task_id, seed, budgets,
                            rpent_commit, checkpoint_sha256, launch_command):
     return validate_run_meta({
@@ -32,7 +47,8 @@ def build_harness_run_meta(*, exp_version, suite, task_id, seed, budgets,
         "suite": suite,
         "seed": seed,
         "planner_model": PLANNER_MODEL,
-        "planner_settings": dict(PLANNER_SETTINGS),
+        "planner_settings": {**PLANNER_SETTINGS,
+                             "planner_timeout_s": planner_timeout_s(budgets)},
         "prompt_hashes": {
             "released_assets": f"pinned via RPENT_COMMIT {rpent_commit}"},
         "rpent_commit": rpent_commit,

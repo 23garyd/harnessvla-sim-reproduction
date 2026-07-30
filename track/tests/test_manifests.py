@@ -184,3 +184,35 @@ def test_ablation_zeroshot_v4_manifest_is_the_predeclared_design():
     assert not {c[1] for c in cells} & {
         "libero_goal_task", "libero_10_task", "libero_10_swap",
         "libero_object_swap"}
+
+
+def test_ablation_timeout_v5_changes_only_the_planner_wall_clock():
+    """The diagnostic is only interpretable if the timeout is the SOLE change
+    from v4."""
+    from pathlib import Path
+    mdir = Path(__file__).resolve().parents[1] / "manifests"
+    v4 = manifests.load_manifest(mdir / "ablation_zeroshot_v4.json")
+    v5 = manifests.load_manifest(mdir / "ablation_timeout_v5.json")
+    assert v5["exp_version"] == "v5-longtimeout"
+    # the ONE intended change (+ the wall cap, which must stay above it)
+    assert v5["budgets"]["planner_timeout_s"] == 2400
+    assert v5["budgets"]["max_wall_seconds"] == 3600 > 2400
+    # everything else identical to v4
+    assert v5["budgets"]["max_steps"] == v4["budgets"]["max_steps"]
+    assert v5["budgets"]["max_turns"] == v4["budgets"]["max_turns"]
+    assert "planner_timeout_s" not in v4["budgets"], \
+        "v4 must stay on the pinned default or its rows are not reproducible"
+    # exactly the 3 seeds that timed out, on the one cell
+    cells = manifests.scored_cells(v5)
+    assert len(cells) == 3
+    assert all(c[:3] == ("harness", "libero_goal_swap", "libero_goal_swap_t2")
+               for c in cells)
+    assert sorted(c[3] for c in cells) == [1, 2, 3]
+
+
+def test_v5_is_leak_audited_with_the_full_v4_rule_set():
+    """v5 hides the same six members as v4, so it must not be audited more
+    leniently. Unknown versions already fail closed; this pins it explicitly."""
+    from track.analysis import leak_rules
+    assert (leak_rules.content_patterns(exp_version="v5-longtimeout")
+            == leak_rules.content_patterns(exp_version="v4"))

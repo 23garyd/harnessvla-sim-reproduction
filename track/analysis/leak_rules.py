@@ -61,6 +61,10 @@ ALL_TSM_FAMILIES = ("spatial", "goal", "object", "10")
 CONDITION_HIDDEN_TSM = {
     "v2-hiddenmem": ("object",),
     "v4": ALL_TSM_FAMILIES,
+    # v5 relaxes only the planner wall-clock; it stashes the same six members
+    # as v4, so it is audited identically. Listed explicitly rather than
+    # relying on the fail-closed fallback, so the intent is visible.
+    "v5-longtimeout": ALL_TSM_FAMILIES,
 }
 
 
