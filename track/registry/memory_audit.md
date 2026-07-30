@@ -156,3 +156,45 @@ the reference can still capture the *interpretation* of those calls
 when the readout is ambiguous. Any future leakage audit must check
 estimate-selection reasoning against the tool outputs, not just action
 parameters against released literals.
+
+## 8. Day-12 addendum: the leak rules, and why the Day-8 tripwire missed two runs
+
+The Day-8 tripwire grepped for **one** hardcoded note name
+(`tall_item_first_basket_placement`) across **three** of the five
+planner-visible artifact globs. That is why two contaminated runs entered
+the accepted results and were only found on Day 12 (see `risk_log.md`
+2026-07-29 and `day8_mechanism.md` §4 Day-12 correction). A narrow
+tripwire that passes is more dangerous than no tripwire, because it is
+read as evidence the condition held.
+
+`track/analysis/leak_rules.py` replaces it, and is the single source of
+truth for both the queue-time tripwire and `test_ablation_leakage.py`:
+
+- **199 content-bearing patterns** from a checked-in inventory
+  (`memory_inventory.txt`, 206 names): the 43 Global Memory leaf names
+  *not* mentioned in the released prompts/guides, plus all 156
+  `results_*_pert` reference and recipe basenames.
+- **Excluded, deliberately.** The bare paths `resources/libero/memory` and
+  `resources/libero/results_*_pert`, and the 7 leaf names the released
+  assets mention (`MEMORY`, `README`, `feedback_bowl_eef_y_offset`,
+  `feedback_failure_forensics`, `feedback_pi0_pick_full_prompt`,
+  `feedback_scripted_pick_limits`, `feedback_swap_perturbs_fixtures`).
+  `prompts/system.py:393-414` instructs the planner to `list_dir` the
+  memory directory and to record which notes it read, so those strings
+  appear in every run: flagging them would make the tripwire fire always
+  and mean nothing. Their appearance is the condition *working*.
+- **All five artifact globs** are scanned: `launcher.log`, `rpent/run.log`,
+  `rpent/*.stream.jsonl`, `rpent/*.txt`, `rpent/transcript_*.json`.
+- **Condition-scoped.** A name is evidence only if that run's own
+  condition hid it, read from its `run_meta.json` `exp_version`
+  (v2-hiddenmem = memory + object family; v4 = memory + all four).
+  Unknown or missing versions fall back to the strictest set — fail closed.
+- **Inventory is checked in, not derived from the live tree**, so the audit
+  works while memory is stashed and after it is restored. A drift test
+  fails if the release gains a note the inventory lacks.
+- **All three quarantined sets are pinned as regression controls**: if a
+  future rules change stops detecting them, a test fails.
+
+The §3 grep and §7 anchoring caveat still stand: this catches *content
+acquisition*, not the anchoring leak, where a stale coordinate never
+enters an action and instead biases estimator selection.

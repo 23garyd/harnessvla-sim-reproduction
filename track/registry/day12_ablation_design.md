@@ -106,12 +106,23 @@ between "the asymmetry does not reproduce" and "it is Goal-specific".
 Recorded now, not after the fact.
 
 **Pre-existing counterexample.** The Day-8 ablation of `object_swap`
-(v2-hiddenmem, family-scoped stash) scored **5/5 without memory vs 2/5
-with it** — memory was net *harmful* on that swap cell, via
-reference-coordinate anchoring (`day9_case_studies.md`). If that
-mechanism generalizes, Δ_S may come out **negative**, contradicting H1.
-That result is reported alongside but **not pooled** into v4: different
-`exp_version`, and its stash hid only the object family's TSM.
+(v2-hiddenmem, family-scoped stash) scored **3/3 without memory vs 1/3
+with it on the same seeds** — memory was net *harmful* on that swap
+cell, via reference-coordinate anchoring (`day9_case_studies.md`). If
+that mechanism generalizes, Δ_S may come out **negative**,
+contradicting H1. That result is reported alongside but **not pooled**
+into v4: different `exp_version`, and its stash hid only the object
+family's TSM.
+
+> **Amended 2026-07-29, before any v4 rollout.** This paragraph
+> originally cited the Day-8 result as 5/5 vs 2/5. Building the §5
+> leakage audit revealed that Day-8 seeds 1–2 ran before the HF cache
+> was stashed and their transcripts carry the leaked Global Memory note
+> filenames; both rows are now quarantined and the figures above are the
+> clean-row restatement. **H1, H0 and the decision rule are unchanged** —
+> only this counterexample's n. Amending it is legitimate because the v4
+> result set is still empty; the §3 freeze binds from the first v4 row.
+> See `day8_mechanism.md` §4 Day-12 correction.
 
 ## 4. Machinery
 
@@ -128,7 +139,7 @@ command still reproduces.
 
 Artifacts land in `artifacts/ablation/runs/v4/...` and never enter the
 core paired ledger; `artifacts/ablation/ledger.csv` gains the v4 rows
-alongside the 5 v2-hiddenmem rows.
+alongside the 3 clean v2-hiddenmem rows.
 
 ## 5. Leak audit
 

@@ -33,7 +33,7 @@ Headline — **combined 8-cell matrix, 80 scored rollouts (40 pairs)**:
 
 Paired flips: 11 rescued / 3 regressed / 12 both-pass / 14 both-fail.
 Ledger: `artifacts/ledger.csv` 87 rows (80 scored + 7 infra);
-`artifacts/ablation/ledger.csv` 5 rows. Artifacts 6.0 GB (cap 200 GB).
+`artifacts/ablation/ledger.csv` 3 rows (was 5; see §9.5). Artifacts 6.0 GB (cap 200 GB).
 
 ## 3. Key findings so far
 
@@ -51,14 +51,21 @@ Ledger: `artifacts/ledger.csv` 87 rows (80 scored + 7 infra);
    because planners chose the +x-biased perception estimate *because it
    matched the cached seed-0 absolute* (0.076, 0.231). Release **x**,
    not z, is the failure variable (s0 succeeded from z=0.367).
-   Predeclared hidden-memory ablation on that cell: **5/5 vs 2/5**.
+   Predeclared hidden-memory ablation on that cell: **3/3 vs 1/3** on
+   clean rows (originally 5/5 vs 2/5; seeds 1–2 quarantined 2026-07-29
+   by the Day-12 leakage audit for an HF-cache condition leak —
+   direction unchanged, n reduced 5→3, mechanism unaffected).
 4. **Anchoring leaks evade grep audits** — the stale coordinate never
    enters an action; it biases estimator *selection* (`memory_audit.md` §7).
 5. **Ablation-integrity findings**: shell-capable planners actively hunt
    for hidden memory (repo-wide `find`, read a stash back); HF cache
    `.lock`/`.metadata` leak strategy-bearing note filenames. Working
    countermeasure: opaque out-of-repo tar + `HF_HUB_OFFLINE=1` +
-   per-seed leak tripwire.
+   per-seed leak tripwire. **A narrow tripwire is worse than none you
+   trust**: the Day-8 version grepped ONE hardcoded note name over 3 of
+   5 artifact globs and passed 2 contaminated rows into the results,
+   found only by the Day-12 audit (`leak_rules.py`: 199 patterns,
+   condition-scoped, shared by tripwire and pytest).
 6. Perturbation difficulty is **highly task-instance dependent** — both
    new short-horizon cells are at ceiling for both arms.
 
@@ -171,9 +178,12 @@ bash track/launchers/run_ablation_hiddenmem.sh [4 5]
 4. **Goal-T non-reproduction may be pin-sensitive** — 2 of 9 core
    failures were plausibly convergent at the 60-turn cap. Day-14
    repeatability work should bound this.
-5. Two **quarantined** ablation attempts kept as evidence, excluded from
+5. **Three** quarantined ablation sets kept as evidence, excluded from
    results: `artifacts/ablation/attempt1_condition_violated/`,
-   `attempt2_seed4_condition_violated/`.
+   `attempt2_seed4_condition_violated/`, and (added 2026-07-29 by the
+   Day-12 audit) `audit_quarantine_hfcache_seeds1_2/` — two originally
+   ACCEPTED rows. Re-running those 2 seeds under the hardened condition
+   to restore n=5 is a legitimate open option; not done.
 6. **History re-authored and republished (2026-07-29).** All 83 commits,
    all 9 tags (including the 4 annotated taggers) and the identity
    strings in this file were rewritten to `23garyd` via `git

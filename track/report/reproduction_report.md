@@ -18,7 +18,10 @@ non-gains and the one regression: the harness has no lever when the
 perturbation lives inside the policy's motor program (Goal-T 1/5→1/5),
 and the released task memory *mis-grounds* an already-competent policy
 on Object-S (4/5→2/5). A predeclared hidden-memory ablation on the
-regression cell went 5/5 — and adversarial triage then revised our own
+regression cell went 5/5 (restated **3/3 on clean rows** by the Day-12
+leakage audit, which quarantined seeds 1–2 for an HF-cache condition
+leak — direction unchanged, n reduced) — and adversarial triage then
+revised our own
 first mechanism story: the memory harms via **reference-coordinate
 anchoring** of perception, a leakage mode that grep-based coordinate
 audits cannot see. We regard the direction as reproduced, the
@@ -133,11 +136,23 @@ all other pins identical.
 
 | seed | direct | harness + memory | hidden-memory |
 |---|---|---|---|
-| 1 | ✓ | ✗ | **✓** 22 turns |
-| 2 | ✓ | ✓ | **✓** 26 turns |
+| 1 | ✓ | ✗ | ~~✓ 22 turns~~ QUARANTINED |
+| 2 | ✓ | ✓ | ~~✓ 26 turns~~ QUARANTINED |
 | 3 | ✓ | ✗ | **✓** 15 turns |
 | 4 | ✗ | ✗ | **✓** 18 turns |
 | 5 | ✓ | ✓ | **✓** 19 turns |
+
+**Corrected 2026-07-29 (Day-12 leakage audit).** Seeds 1–2 were run
+before the HF download cache was added to the stash, so the cache's
+`.lock`/`.metadata` entries exposed the Global Memory note filenames and
+the planner listed them — the same violation `attempt2_seed4` was
+quarantined for. Both rows are quarantined with evidence retained
+(`artifacts/ablation/audit_quarantine_hfcache_seeds1_2/INVALID.md`).
+On the 3 clean rows the ablation reads **hidden-memory 3/3 vs
+with-memory 1/3 vs direct 2/3**: the direction holds and the strongest
+datapoint survives (seed 4, which both frozen arms fail), but this is no
+longer a 5-seed predeclared result. The corrected mechanism below is
+unaffected — its evidence rests on s3/s4, both clean.
 
 **Outcome: 5/5 without memory vs 2/5 with** — including seed 4, which
 neither frozen arm solves.

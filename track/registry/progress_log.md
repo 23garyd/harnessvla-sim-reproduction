@@ -251,14 +251,17 @@ Day 7 entry and `day7_triage.md` §1–2 for the corrected matrix
   | direct (n=20, chunk calls) | 22 / 120 / 120 | — | — |
 
 - **Predeclared hidden-memory ablation (registry v2-hiddenmem,
-  registered before any rollout): 5/5 — H1 confirmed.** The released
+  registered before any rollout): 5/5 — H1 confirmed.** *(Corrected
+  2026-07-29: seeds 1–2 quarantined by the Day-12 leakage audit for an
+  HF-cache condition leak → **3/3 on clean rows**; direction unchanged,
+  n reduced 5→3. See the Day-12 entry and `day8_mechanism.md` §4.)* The released
   TSM's carry-height ballistic-release rule causes the Object-S
   regression; the memory-free planner descends to seat before release:
 
   | seed | direct | harness + memory | hidden-memory | terminal eef z |
   |---|---|---|---|---|
-  | 1 | ✓ | ✗ (release z=0.334, bounced out) | **✓** 22 turns | 0.214 |
-  | 2 | ✓ | ✓ | **✓** 26 turns | 0.187 |
+  | 1 | ✓ | ✗ (release z=0.334, bounced out) | ~~✓ 22 turns~~ QUARANTINED | 0.214 |
+  | 2 | ✓ | ✓ | ~~✓ 26 turns~~ QUARANTINED | 0.187 |
   | 3 | ✓ | ✗ | **✓** 15 turns | 0.285 |
   | 4 | ✗ | ✗ | **✓** 18 turns | 0.219 |
   | 5 | ✓ | ✓ | **✓** 19 turns | 0.180 |
@@ -286,8 +289,9 @@ Day 7 entry and `day7_triage.md` §1–2 for the corrected matrix
 
 - **MAJOR CORRECTION (adversarial re-triage of Object-S s3/s4 retries):
   the Day-8 carry-height mechanism is falsified; the real mechanism is
-  reference-coordinate ANCHORING.** The ablation outcome (5/5 vs 2/5)
-  stands; the causal path is revised. Falsifying evidence + ground
+  reference-coordinate ANCHORING.** The ablation outcome (5/5 vs 2/5;
+  restated 3/3 vs 1/3 on clean rows by the Day-12 audit — the evidence
+  below rests on s3/s4, both clean) stands; the causal path is revised. Falsifying evidence + ground
   truth (rim bands from same-seed depth maps; basket half-width 0.075):
 
   | run | release xy @ z | true center | Δx | outcome |
@@ -420,3 +424,52 @@ Day 7 entry and `day7_triage.md` §1–2 for the corrected matrix
   the core synthesis.
 - Gate: every added family piloted in both conditions ✅, queue inside
   the hard budget ✅, all rows raw-verified ✅.
+
+## Day 12 — memory-ablation machinery, and an integrity finding in already-published results (2026-07-29)
+
+- **Design + PREDECLARATION frozen and committed BEFORE any rollout**
+  (`day12_ablation_design.md`, gate commit `e6c253d`): paper Table-5
+  zero-shot condition (hide Global Memory + all four TSM dirs + the HF
+  cache), 4 cells chosen for **headroom** rather than family symmetry,
+  seeds 1–5 with no seed-0 bootstrap.
+  H1: Δ_S > Δ_T; H0: Δ_S ≤ Δ_T, Δ = with-memory − no-memory success rate
+  pooled per side over 10 seed-paired rollouts. Disclosed up front: the T
+  side starts at 10/10 vs the S side's 8/10, so the design is biased
+  AGAINST H1; n=10/side cannot reach significance; the paper's asymmetry
+  evidence is Goal-family while headroom forces our T side onto
+  Spatial/Object.
+- Machinery built TDD (branch `day12-memory-ablation`): `manifests --plan`
+  CLI, `ablation_zeroshot_v4.json`, `leak_rules.py` + a checked-in
+  206-name `memory_inventory.txt`, and `test_ablation_leakage.py`.
+- **FINDING — 2 of the 5 ACCEPTED Day-8 ablation rows had the condition
+  broken.** The new audit, run against real artifacts, split them cleanly:
+
+  | run | hits on content that run HID | hits on non-hidden families | verdict |
+  |---|---|---|---|
+  | seed 1 `20260728T161724` | **35** | 0 | quarantined |
+  | seed 2 `20260728T162346` | **36** | 30 | quarantined |
+  | seed 3 `20260728T163128` | 0 | 10 | clean |
+  | seed 4 `20260728T200048` | 0 | 9 | clean |
+  | seed 5 `20260728T200704` | 0 | 21 | clean |
+
+  Mechanism: the HF download cache exposed the Global Memory note
+  filenames as `.lock`/`.metadata` entries and the planner listed them —
+  verbatim from seed 1's stream, `=== memory dir ===\ncan_and_small_
+  package_basket_placement.md.lock…`. Same failure mode as the already
+  quarantined `attempt2_seed4`; seeds 1–2 predate the `.cache` stash fix,
+  seeds 4–5 were re-run after it. **Root cause of the MISS:** the Day-8
+  tripwire grepped for ONE hardcoded note name (absent from these two
+  runs) across 3 of the 5 planner-visible artifact globs.
+- **Consequence: the Day-8 result is restated 5/5 → 3/3 on clean rows**
+  (vs with-memory 1/3 and direct 2/3 on those seeds). Direction unchanged
+  and the strongest datapoint survives — seed 4, failed by both frozen
+  arms, is clean — but the status drops from a 5-seed predeclared result
+  to 3 concordant rows. The Day-9 anchoring mechanism is unaffected (its
+  evidence is s3/s4, both clean). Rows quarantined with evidence retained
+  in `artifacts/ablation/audit_quarantine_hfcache_seeds1_2/INVALID.md`;
+  ablation ledger rebuilt 5 → 3 rows; corrected in all 8 citing documents.
+- Second fix from the same audit: the rules are now **condition-scoped**
+  per the run's own recorded `exp_version`, failing closed on unknown
+  versions. Without this, v2-hiddenmem runs were mis-flagged for reading
+  the three TSM families its family-scoped stash legitimately left in place.
+- No rollout run; no GPU work. Queue is Day-12 steps 3–4, after review.

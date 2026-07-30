@@ -79,8 +79,10 @@ ballistic-release rule causes the Object-S regression; prediction
 "> 2/5 with releases executed at/below rim height". H0 = memory
 net-helpful or neutral (≤ 2/5).
 
-Result — **hidden-memory 5/5** (all raw-verified, per-seed leak
-tripwire clean; `artifacts/ablation/ledger.csv`):
+Result as reported on Day 8 — **hidden-memory 5/5** (all raw-verified;
+the per-seed leak tripwire passed, but see the Day-12 correction below —
+**it passed because it was too narrow, and 2 of these 5 rows are now
+quarantined**; the clean-row result is 3/3):
 
 | seed | direct | v2 harness (with memory) | v2-hiddenmem | terminal eef z |
 |---|---|---|---|---|
@@ -109,7 +111,34 @@ this cell.
 > +x-biased perception estimate over the accurate one their own tools
 > returned. z is confounded with xy in this table; xy is decisive.
 > Full evidence: `day9_case_studies.md` §1–2. The ablation OUTCOME
-> (5/5 vs 2/5) is unaffected.
+> (5/5 vs 2/5) is unaffected *by this Day-9 mechanism revision* — but it
+> was later corrected on its own grounds; see the Day-12 block below.
+
+> **CORRECTION (Day-12, 2026-07-29 — n reduced from 5 to 3).** The
+> Day-12 leakage audit (`track/tests/test_ablation_leakage.py`) found
+> that **seeds 1 and 2 above were run with the condition broken**: the
+> HF download cache leaked the Global Memory note filenames as
+> `.lock`/`.metadata` entries, and the planner listed them (verbatim in
+> seed 1's stream: `=== memory dir ===\ncan_and_small_package_basket_
+> placement.md.lock…`). That is the same failure mode
+> `attempt2_seed4_condition_violated` was quarantined for; seeds 1–2 ran
+> at 16:17/16:23, BEFORE `.cache` was added to the stash members, while
+> seeds 4–5 were re-run at 20:00/20:07 after it. The Day-8 tripwire
+> missed them because it grepped for a single hardcoded note name
+> (`tall_item_first_basket_placement`) that does not appear in those two
+> runs. Both rows are quarantined to
+> `artifacts/ablation/audit_quarantine_hfcache_seeds1_2/` (evidence
+> retained, see its `INVALID.md`) and the ablation ledger was rebuilt
+> 5 rows → 3.
+>
+> **Result restated on clean rows only — hidden-memory 3/3** (seeds
+> 3, 4, 5), against with-memory 1/3 and direct 2/3 on those same seeds.
+> The direction is unchanged and the single strongest datapoint
+> survives: **seed 4, which BOTH frozen arms fail, is clean**. What
+> changes is status and power — this is no longer a 5-seed predeclared
+> result but three directionally concordant rows. The Day-9 anchoring
+> mechanism is **unaffected**: its release-coordinate evidence rests on
+> hidden-mem s3 and s4, both clean.
 
 Scope caution for the report: this is ONE cell (5 seeds) chosen
 BECAUSE Day-7 triage implicated the memory there; it does not license

@@ -24,7 +24,8 @@ predeclared hidden-memory ablation, failure taxonomy, and the
 reproduction report. Headline: direct 5/20 vs harness 11/20 (direction
 reproduced); Goal-T gain not reproduced at our planner pin; Object-S
 regressed 4/5→2/5 with a measured mechanism (reference-coordinate
-anchoring; hidden-memory ablation 5/5). Start here:
+anchoring; hidden-memory ablation 3/3 on clean rows — 5/5 as originally
+reported, corrected 2026-07-29 by the Day-12 leakage audit). Start here:
 
 - Report: `track/report/reproduction_report.md`
 - Frozen state + provenance chain: `track/registry/mvp_freeze.md`

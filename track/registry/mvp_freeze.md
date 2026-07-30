@@ -10,7 +10,7 @@ registry versions and new artifact namespaces.
 |---|---|
 | Core ledger | `artifacts/ledger.csv`, 46 data rows (40 scored + 6 infra), sha256 `88450c6b9daa4bafacf8294121b52c2db55b6de4bbee241eecb6a792f4bed905` |
 | Ablation ledger | `artifacts/ablation/ledger.csv`, 5 scored rows, sha256 `9aa679f5757a1e416ad3e97dc2b025bd03ea27f88dccf7b84c0e70820365a308` |
-| Raw run artifacts | `artifacts/runs/` (v1 direct, v2 harness) + `artifacts/ablation/` (v2-hiddenmem + 2 quarantined condition-violated attempts); 3.4 GB total under the 200 GB cap |
+| Raw run artifacts | `artifacts/runs/` (v1 direct, v2 harness) + `artifacts/ablation/` (v2-hiddenmem, 3 clean rows + 3 quarantined condition-violated sets); 3.4 GB total under the 200 GB cap |
 | RPent pin | `6e4ba1805a459d74ad53569e833bae7ae2c59985` (worktree clean at freeze; upstream c01b9cf reviewed and deliberately NOT taken — day7_triage.md §7) |
 | Checkpoint | pi0.5 `RLinf/RLinf-Pi05-LIBERO-130-fullshot-SFT`, sha256 recorded in `track/setup/checkpoint.sha256sums` |
 | Planner pin | claude_code / claude-opus-4-8, 60 turns, planner-timeout 1200 s, keys stripped (subscription billing) |
@@ -24,8 +24,12 @@ direct **5/20 [0.11, 0.47]** vs harness **11/20 [0.34, 0.74]**;
 paired flips 9 rescued / 3 regressed / 2 both-pass / 6 both-fail.
 Per-cell: Spatial-T 0/5→5/5, Goal-S 0/5→3/5, Goal-T 1/5→1/5,
 Object-S 4/5→2/5. Predeclared hidden-memory ablation (Object-S):
-5/5 vs 2/5 with memory; mechanism = reference-coordinate anchoring
-(Day-9 correction).
+originally reported 5/5 vs 2/5 with memory; **corrected 2026-07-29 to
+3/3 on clean rows** after the Day-12 leakage audit quarantined seeds 1–2
+for an HF-cache condition leak (direction unchanged, n reduced 5→3; see
+`day8_mechanism.md` §4 Day-12 correction). Mechanism =
+reference-coordinate anchoring (Day-9 correction), unaffected — its
+evidence rests on the clean seeds 3–4.
 
 ## Provenance chain (mentor trace: claim → code → artifacts)
 

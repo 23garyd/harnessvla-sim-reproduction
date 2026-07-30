@@ -12,7 +12,9 @@ One major correction is issued (§2). No new rollouts; no retuning.
 Day-8 concluded (predeclared H1) that the released memory's
 carry-height release rule ("release at carry_z≈0.30; do not descend")
 causes the Object-S regression. The **ablation outcome stands**
-(hidden-memory 5/5 vs with-memory 2/5) but the **causal path was
+(hidden-memory 5/5 vs with-memory 2/5 — restated 2026-07-29 as **3/3 on
+clean rows**, seeds 1–2 quarantined for an HF-cache condition leak; the
+evidence below rests on s3/s4, both clean) but the **causal path was
 wrong**. Three datapoints falsify the z-mechanism:
 
 1. The seed-0 reference itself succeeded releasing at **z=0.367** —
@@ -49,7 +51,7 @@ biased estimate because it matched the cached s0 absolute**:
   the seed-0 winning release pose" — same anchor, −y flavor.
 
 The hidden-memory planners, with no reference to anchor on, read the
-region center → x≈0.00 → 5/5. **The memory hurts this cell not through
+region center → x≈0.00 → 5/5 (3/3 on clean rows after the Day-12 audit). **The memory hurts this cell not through
 its z rule but by turning a released reference trajectory into a
 confirmation anchor for ambiguous perception.**
 
@@ -139,7 +141,8 @@ mechanism-specific — both live at the perception/grounding seam.
 
 ## 6. Dispositions
 
-- Day-8 H1 status: outcome CONFIRMED (5/5 vs 2/5), mechanism REVISED
+- Day-8 H1 status: outcome CONFIRMED (5/5 vs 2/5; restated 3/3 on clean
+  rows by the Day-12 audit), mechanism REVISED
   (coordinate anchoring, not carry-height). Correction noted in
   `day8_mechanism.md` §4 and the registry ablation row.
 - `memory_audit.md`: addendum §7 (anchoring leak evades the grep audit).
