@@ -79,3 +79,32 @@ def scored_cells(manifest):
 
 def load_manifest(path):
     return validate_manifest(json.loads(Path(path).read_text()))
+
+
+def main(argv=None):
+    """Print `suite task_id seed` lines for a manifest's scored cells.
+
+    The ablation launcher consumes this instead of parsing JSON in bash, so
+    cell expansion goes through validate_manifest() exactly once.
+    """
+    import argparse
+
+    p = argparse.ArgumentParser(description=main.__doc__)
+    p.add_argument("--plan", required=True, metavar="MANIFEST")
+    p.add_argument("--condition", default=None,
+                   help="only print cells with this condition")
+    args = p.parse_args(argv)
+
+    manifest = load_manifest(args.plan)
+    task_ids = {(c["condition"], c["suite"], c["task"]): c["task_id"]
+                for c in manifest["cells"]}
+    for condition, suite, task, seed in scored_cells(manifest):
+        if args.condition and condition != args.condition:
+            continue
+        print(f"{suite} {task_ids[(condition, suite, task)]} {seed}")
+    return 0
+
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())

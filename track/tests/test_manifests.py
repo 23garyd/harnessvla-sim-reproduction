@@ -141,3 +141,20 @@ def test_ext_v3_manifests_load_and_form_4x2_grid():
     for cell in mh["cells"]:
         assert any(e["seed"] == 0 and e["bootstrap_only"]
                    for e in cell["seeds"])
+
+
+def test_plan_cli_prints_suite_taskid_seed(tmp_path, capsys):
+    p = tmp_path / "m.json"
+    p.write_text(json.dumps(valid_manifest()))
+    rc = manifests.main(["--plan", str(p), "--condition", "direct"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert out == "libero_goal_task 2 1\nlibero_goal_task 2 2\n"
+
+
+def test_plan_cli_condition_filter_excludes_other_conditions(tmp_path, capsys):
+    p = tmp_path / "m.json"
+    p.write_text(json.dumps(valid_manifest()))
+    rc = manifests.main(["--plan", str(p), "--condition", "harness"])
+    assert rc == 0
+    assert capsys.readouterr().out == ""
