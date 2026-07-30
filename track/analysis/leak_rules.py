@@ -146,3 +146,36 @@ def scan_run_dir(run_dir, stash_dir=None, inventory=None):
             for match in rx.finditer(text):
                 hits.add((str(path.relative_to(run_dir)), match.group(0)))
     return sorted(hits)
+
+
+def main(argv=None):
+    p = argparse.ArgumentParser(description=__doc__)
+    mode = p.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--scan", metavar="RUN_DIR",
+                      help="audit one run dir; exit 1 on any leak")
+    mode.add_argument("--record", action="store_true",
+                      help="regenerate the checked-in inventory")
+    p.add_argument("--stash", default=None,
+                   help="stash dir path to also treat as a leak pattern")
+    p.add_argument("--out", default=INVENTORY_PATH,
+                   help="inventory path for --record")
+    args = p.parse_args(argv)
+
+    if args.record:
+        n = record_inventory(out_path=args.out)
+        print(f"recorded {n} names -> {args.out}")
+        return 0
+
+    hits = scan_run_dir(args.scan, stash_dir=args.stash)
+    if hits:
+        print(f"LEAK: hidden-memory content referenced in {args.scan}",
+              file=sys.stderr)
+        for path, pattern in hits:
+            print(f"  {path}: {pattern}", file=sys.stderr)
+        return 1
+    print(f"leak audit clean: {args.scan}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

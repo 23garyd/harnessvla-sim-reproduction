@@ -138,3 +138,39 @@ def test_scan_run_dir_survives_undecodable_bytes(tmp_path):
         b"\xff\xfe binary junk tall_item_first_basket_placement\n")
     hits = leak_rules.scan_run_dir(run)
     assert hits == [("rpent/run.log", "tall_item_first_basket_placement")]
+
+
+def test_cli_scan_exits_1_and_names_the_hit(tmp_path, capsys):
+    run = tmp_path / "20260729T120000"
+    (run / "rpent").mkdir(parents=True)
+    (run / "rpent" / "run.log").write_text("tall_item_first_basket_placement")
+    rc = leak_rules.main(["--scan", str(run)])
+    err = capsys.readouterr().err
+    assert rc == 1
+    assert "LEAK" in err
+    assert "tall_item_first_basket_placement" in err
+
+
+def test_cli_scan_exits_0_on_clean_run(tmp_path, capsys):
+    run = tmp_path / "20260729T120000"
+    (run / "rpent").mkdir(parents=True)
+    (run / "launcher.log").write_text("no matching task memory found")
+    rc = leak_rules.main(["--scan", str(run)])
+    assert rc == 0
+    assert "clean" in capsys.readouterr().out
+
+
+def test_cli_scan_detects_the_stash_path(tmp_path, capsys):
+    run = tmp_path / "20260729T120000"
+    (run / "rpent").mkdir(parents=True)
+    (run / "rpent" / "run.log").write_text("find /tmp/tsm_ablation.AbCd -type f")
+    rc = leak_rules.main(["--scan", str(run), "--stash", "/tmp/tsm_ablation.AbCd"])
+    assert rc == 1
+    assert "/tmp/tsm_ablation.AbCd" in capsys.readouterr().err
+
+
+def test_cli_record_writes_the_inventory(tmp_path, capsys):
+    out = tmp_path / "inv.txt"
+    rc = leak_rules.main(["--record", "--out", str(out)])
+    assert rc == 0
+    assert len(leak_rules.load_inventory(out)["memory"]) == 50
