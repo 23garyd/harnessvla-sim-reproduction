@@ -1,8 +1,11 @@
 # Claude handoff — HarnessVLA sim-reproduction track
 
-Last updated: 2026-07-29 (end of plan Day 11)
-Repo: `/home/demo/github_sow_harnessVLA` · remote `nuPylot/harnessvla-sim` (private)
-HEAD: `16734c7` · tags `day2-install-smoke` → `day11-extension-matrix` (all pushed)
+Last updated: 2026-07-29 (Day-12 machinery complete; queue not yet run)
+Repo: `/home/demo/github_sow_harnessVLA` · canonical remote `garyd` →
+`github.com/23garyd/harnessvla-robot-stack` (private). The old
+`nuPylot/harnessvla-sim` is NOT configured here and holds the pre-rewrite
+history (see §9.6). Tags `day2-install-smoke` → `day11-extension-matrix`.
+Work in progress on branch `day12-memory-ablation` (unmerged, unpushed).
 
 ## 1. What this track is
 
@@ -14,8 +17,18 @@ Plan: `docs/HarnessVLA_Simulation_Reproduction_Internship_Plan.docx`.
 
 ## 2. Current status
 
-**Days 1–11 complete.** Day-10 MVP frozen; Day-11 extension matrix
-finished and pushed. 118 tests green. RPent pin clean. GPU idle.
+**Days 1–11 complete. Day-12 machinery complete; the v4 queue has NOT
+been run** (no GPU work today). 162 tests green (+1 skipped: the v4
+leakage audit, which activates when v4 rows exist). RPent pin clean.
+GPU idle.
+
+Day-12 so far: predeclaration frozen and committed BEFORE any rollout
+(gate commit `e6c253d`) — **do not rewrite history past it, the gate is
+a timestamp claim**. Machinery built TDD on branch
+`day12-memory-ablation`. The new leakage audit then found that 2 of the
+5 ACCEPTED Day-8 ablation rows had the condition broken; they are
+quarantined and the Day-8 result is restated 5/5 → **3/3 on clean
+rows** across all 9 citing documents (§9.5).
 
 Headline — **combined 8-cell matrix, 80 scored rollouts (40 pairs)**:
 
@@ -102,6 +115,7 @@ Ledger: `artifacts/ledger.csv` 87 rows (80 scored + 7 infra);
 | v2 | harness arm, released one-shot regime: 1200-step guide budget, env backstop 1220, claude-opus-4-8, 60 turns, planner-timeout 1200 s, wall 2400 s (`harness_v2.json`) |
 | v2-hiddenmem | predeclared Day-8 ablation, Object-S (`ablation_hiddenmem_v2.json`) |
 | v3 | Day-11 extension, +4 suites completing the 4×2 family grid (`ext_v3_direct.json`, `ext_v3_harness.json`) |
+| v4 | Day-12 memory ablation, paper Table-5 zero-shot: Global Memory + all four TSM dirs + HF cache hidden, harness only, 4 headroom cells × s1–s5, **no seed-0 bootstrap** (`ablation_zeroshot_v4.json`) — designed and predeclared, NOT yet queued |
 
 Deviations (4 rows) in `track/registry/protocol_deviations.md`:
 scale, planner pin, direct-600-vs-harness-1200 budget asymmetry,
@@ -139,8 +153,13 @@ defaults) → cells now carry `manifest`; tests added.
 - Registry/risks: `track/registry/{experiment_registry,risk_log,protocol_deviations,progress_log}.md`
   (`progress_log.md` carries **per-day result tables** — keep it that way)
 - Launchers: `track/launchers/{run_direct,run_harness,batch_runner,direct_lib,harness_lib}.py`,
-  `planner_env.sh`, `run_ablation_hiddenmem.sh`
-- Analysis: `track/analysis/{compare,build_ledger,schemas,manifests,disk_guard}.py`
+  `planner_env.sh`, `run_ablation_memory.sh` (+ `run_ablation_hiddenmem.sh`,
+  now a thin wrapper — read its header, it hides MORE than the original
+  v2-hiddenmem condition did)
+- Analysis: `track/analysis/{compare,build_ledger,schemas,manifests,disk_guard,leak_rules}.py`
+  (`leak_rules.py` = the ONE definition of a memory leak, shared by the
+  queue tripwire and `test_ablation_leakage.py`; inventory in
+  `track/registry/memory_inventory.txt`)
 - Setup: `track/setup/{setup.sh,track_env.sh,pin_check.sh,pins.env,*.sha256sums,setup_notes.md}`
 - Trace: `track/traces/day4_object_swap_t2_s0_annotated.md`
 
@@ -160,8 +179,15 @@ PYTHONPATH= .venv/bin/python -m track.launchers.batch_runner \
 PYTHONPATH= .venv/bin/python -m track.analysis.compare --ledger artifacts/ledger.csv
 PYTHONPATH= .venv/bin/python -m track.analysis.build_ledger --runs-root artifacts/runs --out artifacts/ledger.csv
 
-# ablation (opaque stash + leak tripwire; optional seed args)
-bash track/launchers/run_ablation_hiddenmem.sh [4 5]
+# ablation — ALWAYS --dry-run first (verifies cells + what gets hidden,
+# stashes nothing). v4 defaults; --limit N slices a planner window.
+bash track/launchers/run_ablation_memory.sh --dry-run
+bash track/launchers/run_ablation_memory.sh [--limit 12]
+bash track/launchers/run_ablation_hiddenmem.sh --dry-run   # Day-8 manifest
+
+# leak audit (same rules as the queue tripwire)
+PYTHONPATH= .venv/bin/python -m track.analysis.leak_rules --scan <run_dir>
+PYTHONPATH= .venv/bin/python -m track.analysis.leak_rules --record  # refresh inventory
 ```
 
 ## 9. Unresolved / open issues
@@ -212,15 +238,21 @@ bash track/launchers/run_ablation_hiddenmem.sh [4 5]
 
 ## 10. Next steps
 
-1. **Day 12 — memory ablation, paper zero-shot protocol.** Hide
-   Task-Specific + Global Memory across the grid; **predeclare before
-   results**: removing memory hurts *swap* cells more than
-   *redirection* cells. Machinery exists and is hardened
-   (`run_ablation_hiddenmem.sh`). Discriminating cells are goal/object/10
-   **swap** vs goal/10 **task** — the two new short-horizon cells are at
-   ceiling for both arms and will carry no signal. Add a pytest leakage
-   check that greps planner transcripts for memory paths (plan asks for
-   it explicitly).
+1. **Day 12 — remaining steps (design + machinery DONE).** Predeclaration
+   frozen at `e6c253d`; manifest, launcher, leak rules and the leakage
+   pytest are built and green on branch `day12-memory-ablation`. Left to do:
+   (a) merge the branch and push; (b) **attended pilot, 1 cell / 1 seed** —
+   verify the condition holds and that the tripwire + per-seed hygiene fire
+   correctly; (c) queue the remaining 19 cells in **2 planner windows ≤12
+   each, ≥3 h apart**; (d) analyse Δ_S vs Δ_T with Wilson CIs and paired
+   flip counts, raw-verifying every row; (e) `progress_log.md` Day-12 result
+   table. Note the Day-11 handoff claim that the ceiling cells "carry no
+   signal" was **superseded** — for a drop-detecting ablation they are the
+   highest-power cells and floor cells are the useless ones
+   (`day12_ablation_design.md` §2).
+   The Δ analysis needs a small `compare.py` addition for the paired
+   per-side statistic; its shape depends on the terminal-reason mix in real
+   v4 rows, so it is deliberately unwritten (see the plan's self-review).
 2. **Day 13 — retry/staging ablation**: one `vla_act` attempt per contact
    phase, identical budgets/memory/checkpoint, plus a fairness audit note.
 3. **Day 14 — planner variability/repeatability**: repeated runs on fixed
