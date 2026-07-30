@@ -60,3 +60,81 @@ def test_checked_in_inventory_matches_the_live_release():
     leak rules would silently stop covering it."""
     live = leak_rules.record_inventory(out_path=None)
     assert live == leak_rules.load_inventory()
+
+
+def test_content_patterns_exclude_prompt_named_leaves():
+    pats = set(leak_rules.content_patterns())
+    # content-bearing: the planner cannot name this without reading
+    assert "tall_item_first_basket_placement" in pats
+    # prompt echo: the released guides name it
+    for name in leak_rules.PROMPT_NAMED:
+        assert name not in pats
+
+
+def test_content_patterns_exclude_bare_paths():
+    """The system prompt tells the planner to list_dir these, so their
+    appearance is the condition WORKING, not a leak."""
+    pats = set(leak_rules.content_patterns())
+    assert "resources/libero/memory" not in pats
+    assert "resources/libero/results_object_pert" not in pats
+
+
+def test_content_patterns_count_is_43_memory_plus_156_tsm():
+    assert len(leak_rules.content_patterns()) == 199
+
+
+def test_content_patterns_include_the_stash_dir_when_given():
+    pats = leak_rules.content_patterns(stash_dir="/tmp/tsm_ablation.XYZ")
+    assert "/tmp/tsm_ablation.XYZ" in pats
+    assert len(pats) == 200
+
+
+def test_scan_text_positive_control_detects_a_leaf_name():
+    hits = leak_rules.scan_text(
+        "I read tall_item_first_basket_placement.md for the offsets",
+        leak_rules.content_patterns())
+    assert hits == ["tall_item_first_basket_placement"]
+
+
+def test_scan_text_negative_control_ignores_prompt_echoes():
+    """A transcript that only echoes what the prompt told it must be clean."""
+    text = ("list_dir resources/libero/memory/ -> (empty)\n"
+            "no matching task memory found; MEMORY.md absent\n"
+            "consulted feedback_swap_perturbs_fixtures per the guide\n")
+    assert leak_rules.scan_text(text, leak_rules.content_patterns()) == []
+
+
+def test_scan_text_detects_tsm_reference_names():
+    hits = leak_rules.scan_text("opened recipe_object_swap_t2_s0.jsonl",
+                                leak_rules.content_patterns())
+    assert hits == ["recipe_object_swap_t2_s0"]
+
+
+def test_scan_run_dir_reports_file_and_pattern(tmp_path):
+    run = tmp_path / "20260729T120000"
+    (run / "rpent").mkdir(parents=True)
+    (run / "launcher.log").write_text("clean\n")
+    (run / "rpent" / "run.log").write_text(
+        "cat tall_item_first_basket_placement.md\n")
+    (run / "rpent" / "transcript_x.json").write_text(
+        '{"note": "recipe_object_swap_t2_s0"}')
+    hits = leak_rules.scan_run_dir(run)
+    assert ("rpent/run.log", "tall_item_first_basket_placement") in hits
+    assert ("rpent/transcript_x.json", "recipe_object_swap_t2_s0") in hits
+    assert not any(f == "launcher.log" for f, _ in hits)
+
+
+def test_scan_run_dir_clean_dir_returns_no_hits(tmp_path):
+    run = tmp_path / "20260729T120000"
+    (run / "rpent").mkdir(parents=True)
+    (run / "launcher.log").write_text("no matching task memory found\n")
+    assert leak_rules.scan_run_dir(run) == []
+
+
+def test_scan_run_dir_survives_undecodable_bytes(tmp_path):
+    run = tmp_path / "20260729T120000"
+    (run / "rpent").mkdir(parents=True)
+    (run / "rpent" / "run.log").write_bytes(
+        b"\xff\xfe binary junk tall_item_first_basket_placement\n")
+    hits = leak_rules.scan_run_dir(run)
+    assert hits == [("rpent/run.log", "tall_item_first_basket_placement")]

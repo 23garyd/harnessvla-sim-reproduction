@@ -99,3 +99,50 @@ def load_inventory(path=INVENTORY_PATH):
             raise ValueError(f"inventory: unknown kind {kind!r} in {line!r}")
         inv[kind].append(name)
     return inv
+
+
+def content_patterns(inventory=None, stash_dir=None):
+    """Literal strings whose presence proves hidden content was read.
+
+    Excludes PROMPT_NAMED leaves and never includes bare directory paths:
+    the released prompt instructs the planner to list those, so echoing them
+    is expected behaviour under the ablation, not a leak.
+    """
+    inv = inventory if inventory is not None else load_inventory()
+    pats = {n for n in inv["memory"] if n not in PROMPT_NAMED}
+    pats |= set(inv["tsm"])
+    if stash_dir:
+        pats.add(str(stash_dir))
+    return sorted(pats)
+
+
+def _compile(patterns):
+    # longest-first so a pattern that is a prefix of another cannot mask it
+    ordered = sorted(patterns, key=len, reverse=True)
+    return re.compile("|".join(re.escape(p) for p in ordered))
+
+
+def scan_text(text, patterns):
+    """Sorted distinct patterns found in text."""
+    if not patterns:
+        return []
+    return sorted({m.group(0) for m in _compile(patterns).finditer(text)})
+
+
+def scan_run_dir(run_dir, stash_dir=None, inventory=None):
+    """Scan one run dir's planner-visible artifacts.
+
+    Returns a sorted list of (path relative to run_dir, pattern) pairs.
+    """
+    run_dir = Path(run_dir)
+    patterns = content_patterns(inventory, stash_dir)
+    rx = _compile(patterns)
+    hits = set()
+    for glob in TRANSCRIPT_GLOBS:
+        for path in sorted(run_dir.glob(glob)):
+            if not path.is_file():
+                continue
+            text = path.read_text(errors="ignore")
+            for match in rx.finditer(text):
+                hits.add((str(path.relative_to(run_dir)), match.group(0)))
+    return sorted(hits)
