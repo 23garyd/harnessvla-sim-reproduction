@@ -240,3 +240,81 @@ the existing scale-deviation row.
   terminal-reason breakdown, not folded silently into the success rate.
 - **Long-horizon timeout** is avoided by construction — no LIBERO-10 cell
   is in the v4 set.
+
+---
+
+## 10. RESULTS (appended 2026-07-30 — §3 is frozen and untouched)
+
+20/20 v4 rows, all raw-verified against `states.json`, zero leaks across all
+20 runs, zero infra failures, zero tripwire aborts, teardown verified
+bit-identical (619 files) after both windows.
+
+| cell | side | with memory | no memory | Δ | per-seed (s1→s5) |
+|---|---|---|---|---|---|
+| spatial_task t2 | T | 5/5 | 5/5 | +0.00 | == == == == == |
+| object_task t2 | T | 5/5 | 5/5 | +0.00 | == == == == == |
+| spatial_swap t2 | S | 5/5 | 5/5 | +0.00 | == == == == == |
+| goal_swap t2 | S | 3/5 | **2/5** | — | LO LO .. GA == |
+
+| side | with memory | no memory | Wilson 95% (no-mem) | Δ |
+|---|---|---|---|---|
+| **T** (redirection) | 10/10 | 10/10 | [0.72, 1.00] | **+0.00** |
+| **S** (swap) | 8/10 | 7/10 | [0.40, 0.89] | **+0.10** |
+
+Paired flips: 16 both-pass, 1 both-fail, **2 lost** (memory helped), **1
+gained** (memory hurt). All four flips are in `goal_swap`.
+
+### Verdict against the predeclared decision rule
+
+Δ_S = +0.10 > Δ_T = +0.00, so H1 is **confirmed on the point estimate**. Per
+§3's pre-committed language, because the side CIs overlap heavily
+([0.49,0.94] vs [0.40,0.89]) this is reported as **directionally consistent,
+not established**. The whole effect is **one net seed**.
+
+### The mechanism is a budget effect, not a grounding failure
+
+This is the load-bearing caveat, and §9's pre-registered confound
+materialising — via the 1200 s planner timeout rather than the 60-turn cap
+we anticipated:
+
+| arm | terminal reasons (these 4 cells) |
+|---|---|
+| with memory | 18 `benchmark_predicate`, 1 `planner_finished_without_predicate`, 1 `turn_budget` |
+| no memory | 17 `benchmark_predicate`, **3 `planner_timeout`** |
+
+**All three no-memory failures are `planner_timeout`** on `goal_swap`, at
+46/51/49 turns with 2 pi0 calls each — i.e. *below* the 60-turn cap and still
+working when the pinned 1200 s wall-clock cut them off. They are
+`budget_exhausted`, not task failures. Under the frozen protocol they score
+as failures (1200 s is a pinned v2 regime bound, not retuned mid-experiment),
+and that is how they are counted above.
+
+So the honest mechanism claim is **not** "without memory the planner cannot
+re-ground a swapped fixture". It is: **without memory the planner must
+re-derive calibration, which costs wall-clock, and on `goal_swap` that cost
+exceeds a pinned budget.** Memory's measured value here is *deliberation
+time*, not capability. Whether the paper's re-grounding mechanism exists at
+this pin is **untested** — a longer planner timeout would likely convert
+these three rows, and that experiment has not been run.
+
+### What did NOT reproduce
+
+The paper's predicted asymmetry is a **−56 pt** swap-cell collapse against
+**−8 pt** for redirection. Measured: **−10 pt vs 0 pt**. The direction
+matches; the magnitude does not, by a factor of ~5. Three of the four cells
+show *zero* effect from removing Global Memory **and** all four TSM
+directories — `spatial_swap`, a swap cell with a released seed-0 reference,
+was 5/5 either way.
+
+### Concordant prior
+
+Day-8's `object_swap` ablation (3/3 without memory vs 1/3 with, clean rows)
+remains the one cell where memory was net *harmful*, via reference-coordinate
+anchoring. The single `GAINED` flip here (`goal_swap` s4: fails with memory,
+succeeds without) is the same sign and worth a Day-13 look.
+
+### Cost check
+
+No exploration penalty on successes: no-memory 20–51 turns (median 26) vs
+with-memory 16–40 (median 23), same median of 1 pi0 call. The penalty is
+concentrated in the failures, which is exactly the timeout story.

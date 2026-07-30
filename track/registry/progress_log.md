@@ -498,3 +498,42 @@ Day 7 entry and `day7_triage.md` §1–2 for the corrected matrix
   that v4 rows exist).
 - Lesson for the remaining windows: run `--self-check` before each one, and
   do not trust `pin_check` as evidence the condition was torn down.
+
+### Day-12 RESULTS — v4 queue complete (2026-07-30, 20/20 rows)
+
+Two windows (11 + 8 cells, 10 h apart), all raw-verified, **0 leaks, 0 infra
+failures, 0 tripwire aborts, 0 session-limit hits**; teardown verified
+bit-identical after both.
+
+| cell | side | with memory | no memory | per-seed s1→s5 |
+|---|---|---|---|---|
+| libero_spatial_task_t2 | T | 5/5 | 5/5 | == == == == == |
+| libero_object_task_t2 | T | 5/5 | 5/5 | == == == == == |
+| libero_spatial_swap_t2 | S | 5/5 | 5/5 | == == == == == |
+| libero_goal_swap_t2 | S | 3/5 | **2/5** | LO LO .. GA == |
+| **T side** | | **10/10** | **10/10** | **Δ_T = +0.00** |
+| **S side** | | **8/10** [0.49,0.94] | **7/10** [0.40,0.89] | **Δ_S = +0.10** |
+
+Paired flips: 16 both-pass, 1 both-fail, 2 lost, 1 gained — all four flips in
+`goal_swap`.
+
+- **Predeclared H1 (Δ_S > Δ_T) confirmed on the point estimate**, and per the
+  §3 pre-commitment reported as **directionally consistent, not established**
+  (overlapping CIs, n=10/side). The entire effect is **one net seed**.
+- **The mechanism is a budget effect, not a grounding failure.** All 3
+  no-memory failures are `planner_timeout` at 46/51/49 turns with 2 pi0 calls
+  — below the 60-turn cap, still working when the pinned 1200 s wall-clock
+  cut them off. Memory's measured value here is **deliberation time**, not
+  capability. The §9 pre-registered confound materialised, via the planner
+  timeout rather than the turn cap we anticipated.
+- **Magnitude did not reproduce**: paper predicts −56 pt swap vs −8 pt
+  redirection; measured −10 pt vs 0 pt (~5× short). Three of four cells show
+  **zero** effect from hiding Global Memory AND all four TSM dirs —
+  including `spatial_swap`, a swap cell with a released seed-0 reference.
+- No exploration penalty on successes (median 26 turns no-memory vs 23 with,
+  same median 1 pi0 call); the cost is concentrated in the timeouts.
+- The one `GAINED` flip (goal_swap s4: fails with memory, succeeds without)
+  is the same sign as the Day-8 anchoring finding — a Day-13 lead.
+- Open, untested: a longer planner timeout would likely convert those 3 rows.
+  Whether the paper's re-grounding mechanism exists at this pin is therefore
+  **unknown**, not refuted.
