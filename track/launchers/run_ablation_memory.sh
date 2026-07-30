@@ -35,8 +35,65 @@ OUT_ROOT="${OUT_ROOT:-$REPO/artifacts/ablation/runs}"
 QUARANTINE="${QUARANTINE:-$REPO/artifacts/ablation/quarantine}"
 
 usage() {
-    echo "usage: run_ablation_memory.sh [--manifest FILE] [--limit N] [--dry-run]" >&2
+    echo "usage: run_ablation_memory.sh [--manifest FILE] [--limit N]" \
+         "[--dry-run] [--self-check]" >&2
     exit 64
+}
+
+# Stash state is SCRIPT-SCOPE, never local to main(). The EXIT trap runs after
+# main()'s frame is gone, so locals are invisible there and `set -u` kills the
+# restore before it extracts — which is exactly what happened on the first v4
+# pilot (2026-07-29): the queue finished, the trap died on `stash_tar: unbound
+# variable`, and the released assets were left stashed. pin_check does NOT
+# catch this because RPent/resources/ is gitignored.
+STASH_DIR=""
+STASH_TAR=""
+MEMBERS_FILE=""
+
+restore() {
+    local rc=$?
+    if [ -n "${STASH_TAR:-}" ] && [ -f "${STASH_TAR:-}" ]; then
+        tar -C "$RES" -xf "$STASH_TAR"
+        # Self-verify: every stashed member must be back on disk. A silent
+        # restore failure leaves the repo memory-free, which would invisibly
+        # contaminate every LATER run, ablation or not.
+        local member missing=0
+        while read -r member; do
+            [ -n "$member" ] || continue
+            [ -e "$RES/$member" ] || { echo "FATAL: restore left '$member' missing" >&2; missing=1; }
+        done < "$MEMBERS_FILE"
+        if [ "$missing" = 1 ]; then
+            echo "FATAL: released assets NOT fully restored. Stash retained at" \
+                 "$STASH_DIR — extract it manually before any further run:" >&2
+            echo "  tar -C $RES -xf $STASH_TAR && rm -rf $STASH_DIR" >&2
+            echo "DELETE the stash afterwards: a stale tar under \$TMPDIR is a" \
+                 "readable copy of the hidden memory that a LATER ablation's" \
+                 "planner could find, and the tripwire only knows its own" \
+                 "current stash path." >&2
+            return 1
+        fi
+        rm -rf "$STASH_DIR"
+        echo "restored stashed members (verified present)"
+    fi
+    bash "$REPO/track/setup/pin_check.sh"
+    return $rc
+}
+
+do_stash() {
+    STASH_DIR="$(mktemp -d "${TMPDIR:-/tmp}/tsm_ablation.XXXXXXXX")"
+    chmod 700 "$STASH_DIR"
+    STASH_TAR="$STASH_DIR/stash.tar"
+    MEMBERS_FILE="$STASH_DIR/members.txt"
+    [ -d "$RES/libero/memory" ] || {
+        echo "FATAL: $RES/libero/memory missing before stash" >&2; exit 1; }
+    stash_members > "$MEMBERS_FILE"
+    tar -C "$RES" -cf "$STASH_TAR" -T "$MEMBERS_FILE"
+    local member
+    while read -r member; do
+        [ -n "$member" ] && rm -rf "${RES:?}/$member"
+    done < "$MEMBERS_FILE"
+    echo "stashed -> opaque tar outside repo:"
+    sed 's/^/  /' "$MEMBERS_FILE"
 }
 
 stash_members() {
@@ -91,15 +148,32 @@ tripwire() {
 }
 
 main() {
-    local manifest="$DEFAULT_MANIFEST" limit=0 dry_run=0
+    local manifest="$DEFAULT_MANIFEST" limit=0 dry_run=0 self_check=0
     while [ $# -gt 0 ]; do
         case "$1" in
-            --manifest) [ $# -ge 2 ] || usage; manifest="$2"; shift 2 ;;
-            --limit)    [ $# -ge 2 ] || usage; limit="$2"; shift 2 ;;
-            --dry-run)  dry_run=1; shift ;;
+            --manifest)   [ $# -ge 2 ] || usage; manifest="$2"; shift 2 ;;
+            --limit)      [ $# -ge 2 ] || usage; limit="$2"; shift 2 ;;
+            --dry-run)    dry_run=1; shift ;;
+            --self-check) self_check=1; shift ;;
             *) usage ;;
         esac
     done
+
+    if [ "$self_check" = 1 ]; then
+        # Exercise the REAL stash + trap-restore path with no rollout. Run this
+        # before burning a planner window: it is what would have caught the
+        # 2026-07-29 unbound-variable restore failure.
+        trap restore EXIT TERM INT
+        do_stash
+        local member hidden=1
+        while read -r member; do
+            [ -n "$member" ] || continue
+            [ -e "$RES/$member" ] && { echo "FATAL: '$member' still present after stash" >&2; hidden=0; }
+        done < "$MEMBERS_FILE"
+        [ "$hidden" = 1 ] || return 1
+        echo "self-check: stash hid every member; restoring via the EXIT trap"
+        return 0
+    fi
 
     local cells
     cells="$(plan_cells "$manifest")"
@@ -120,32 +194,10 @@ main() {
     # launcher reaching the planner also goes through run_planner.
     source "$REPO/track/launchers/planner_env.sh"
 
-    local exp stash_dir stash_tar members_file
+    local exp
     exp="$(exp_version_of "$manifest")"
-    stash_dir="$(mktemp -d "${TMPDIR:-/tmp}/tsm_ablation.XXXXXXXX")"
-    chmod 700 "$stash_dir"
-    stash_tar="$stash_dir/stash.tar"
-    members_file="$stash_dir/members.txt"
-
-    restore() {
-        if [ -f "$stash_tar" ]; then
-            tar -C "$RES" -xf "$stash_tar"
-            rm -rf "$stash_dir"
-            echo "restored stashed members"
-        fi
-        bash "$REPO/track/setup/pin_check.sh"
-    }
     trap restore EXIT TERM INT
-
-    [ -d "$RES/libero/memory" ] || {
-        echo "FATAL: $RES/libero/memory missing before stash" >&2; exit 1; }
-    stash_members > "$members_file"
-    tar -C "$RES" -cf "$stash_tar" -T "$members_file"
-    while read -r member; do
-        [ -n "$member" ] && rm -rf "${RES:?}/$member"
-    done < "$members_file"
-    echo "stashed -> opaque tar outside repo:"
-    sed 's/^/  /' "$members_file"
+    do_stash
 
     # Block rpent's HF auto-resync of the stashed memory dataset.
     export HF_HUB_OFFLINE=1
@@ -164,8 +216,8 @@ main() {
             --manifest "$manifest" --out-root "$OUT_ROOT" || \
             echo "WARNING: seed $seed exited infra (row retained); continuing"
         latest="$(ls -td "$run_parent"/2* | head -1)"
-        tripwire "$latest" "$stash_dir"
-        hygiene_after_seed "$latest" "$members_file"
+        tripwire "$latest" "$STASH_DIR"
+        hygiene_after_seed "$latest" "$MEMBERS_FILE"
     done <<< "$cells"
 
     ( cd "$REPO" && PYTHONPATH= "$PY" -m track.analysis.build_ledger \

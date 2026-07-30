@@ -119,3 +119,67 @@ def test_day8_wrapper_delegates_with_the_v2_hiddenmem_manifest(bash, tmp_path):
     cells = [l for l in r.stdout.split("\n") if l.startswith("libero_")]
     assert len(cells) == 5
     assert all(c.startswith("libero_object_swap 2 ") for c in cells)
+
+
+def _tree_fingerprint(root):
+    """(relative path, bytes) for every file under root, order-independent."""
+    return sorted((str(p.relative_to(root)), p.read_bytes())
+                  for p in root.rglob("*") if p.is_file())
+
+
+def test_self_check_stashes_then_restores_via_the_trap(bash, tmp_path):
+    """REGRESSION (2026-07-29): the first v4 pilot left the released assets
+    stashed because the EXIT trap's restore() referenced main()'s *local*
+    variables, so under `set -u` it died on `stash_tar: unbound variable`
+    before extracting. pin_check cannot catch it -- RPent/resources/ is
+    gitignored -- so only an end-to-end stash+restore check can.
+    """
+    res = fake_resources(tmp_path)
+    (res / "libero" / "memory" / "leaf.md").write_text("content that must survive")
+    (res / "libero" / "results_object_pert" / "object_swap_t2_s0.json").write_text("{}")
+    before = _tree_fingerprint(res)
+
+    r = bash(f'bash {SCRIPT} --self-check',
+             env={"TRACK_REPO": str(REPO), "TRACK_RES": str(res)})
+
+    assert r.returncode == 0, f"self-check failed: {r.stdout}\n{r.stderr}"
+    assert "stashed -> opaque tar" in r.stdout
+    assert "self-check: stash hid every member" in r.stdout
+    assert "restored stashed members (verified present)" in r.stdout, \
+        "restore did not run or did not verify"
+    assert "unbound variable" not in r.stderr
+    assert _tree_fingerprint(res) == before, "resources not restored bit-identically"
+
+
+def test_self_check_leaves_no_stash_dir_behind(bash, tmp_path):
+    """Uses an isolated TMPDIR: globbing the real /tmp would couple this test
+    to unrelated leftovers on the machine."""
+    res = fake_resources(tmp_path)
+    tmpdir = tmp_path / "tmp"
+    tmpdir.mkdir()
+    r = bash(f'bash {SCRIPT} --self-check',
+             env={"TRACK_REPO": str(REPO), "TRACK_RES": str(res),
+                  "TMPDIR": str(tmpdir)})
+    assert r.returncode == 0, r.stderr
+    assert not list(tmpdir.glob("tsm_ablation.*")), "stash dir not cleaned up"
+
+
+def test_restore_reports_fatal_and_keeps_the_stash_if_extraction_is_incomplete(
+        bash, tmp_path):
+    """If restore cannot put everything back it must say so loudly and RETAIN
+    the stash, because a silent failure leaves every later run memory-free."""
+    res = fake_resources(tmp_path)
+    stash = tmp_path / "stash"
+    stash.mkdir()
+    (stash / "members.txt").write_text("libero/memory\nlibero/never_in_the_tar\n")
+    # a tar that restores only one of the two declared members
+    r0 = bash(f'tar -C {res} -cf {stash}/stash.tar libero/memory',
+              env={"TRACK_REPO": str(REPO), "TRACK_RES": str(res)})
+    assert r0.returncode == 0, r0.stderr
+    r = bash(
+        f'source {SCRIPT}; STASH_DIR={stash}; STASH_TAR={stash}/stash.tar; '
+        f'MEMBERS_FILE={stash}/members.txt; restore',
+        env={"TRACK_REPO": str(REPO), "TRACK_RES": str(res)})
+    assert r.returncode != 0
+    assert "NOT fully restored" in r.stderr
+    assert (stash / "stash.tar").is_file(), "stash must be retained for manual recovery"

@@ -473,3 +473,28 @@ Day 7 entry and `day7_triage.md` §1–2 for the corrected matrix
   versions. Without this, v2-hiddenmem runs were mis-flagged for reading
   the three TSM families its family-scoped stash legitimately left in place.
 - No rollout run; no GPU work. Queue is Day-12 steps 3–4, after review.
+- **Attended pilot (1 cell / 1 seed) — the condition works, and the pilot
+  earned its keep by finding a teardown bug no unit test could.**
+  `libero_spatial_task` t2 s1 under v4: **success**, predicate fired at
+  states.json entry 10 during an *analytic* `release`, 27 turns, **1 pi0
+  call**, 9 analytic calls, 420 s. Raw-verified against `states.json`; leak
+  audit clean under the full 199-pattern v4 rule set; per-seed hygiene a
+  no-op (the planner created nothing under a hidden path). Ledger: 4 rows
+  (3 clean v2-hiddenmem + this one). With memory this cell/seed also
+  succeeded, so the seed contributes 0 to Δ_T — **one row is not a result**;
+  19 cells remain.
+- **INCIDENT: the queue exited leaving the released assets stashed.** The
+  EXIT trap's `restore()` referenced `main()`'s locals, so it died on
+  `stash_tar: unbound variable` before extracting. `pin_check` said "clean"
+  the whole time — it is structurally blind here, because
+  `RPent/resources/` is gitignored. Restored from the retained tar and
+  verified bit-identical (619 files, content hash). Fixed: script-scope
+  stash state, a self-verifying `restore()` that retains the stash and
+  prints recovery steps on failure, a `--self-check` mode that exercises the
+  real stash+trap path without a rollout, and 3 regression tests. Also
+  removed a stale stash dir from /tmp — a readable copy of hidden memory is
+  itself a leak channel for a *later* run, whose tripwire only knows its own
+  stash path. 166 tests green (the v4 leakage audit is no longer skipped now
+  that v4 rows exist).
+- Lesson for the remaining windows: run `--self-check` before each one, and
+  do not trust `pin_check` as evidence the condition was torn down.
