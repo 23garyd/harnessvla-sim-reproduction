@@ -164,8 +164,8 @@ Day 7 entry and `day7_triage.md` §1–2 for the corrected matrix
   before turn 1 (0 steps, 0 VLA calls), s2 cut at turn 44. rpent exits 0 on
   planner exceptions, so all four were misclassified valid_failure. Fixed
   by stream-level classification (planner API error → infra_failure,
-  commit 2c49ac0; SDK planner-timeout → budget_exhausted/planner_timeout,
-  commit c9e00e5; 107 tests green), rows regenerated from raw artifacts
+  commit 61c9524; SDK planner-timeout → budget_exhausted/planner_timeout,
+  commit d214888; 107 tests green), rows regenerated from raw artifacts
   (originals preserved), cells re-run under the frozen infra-retry
   protocol (0 rate limits, raw-verified): s2 ✓ 21 turns, s5 ✓ 20 turns,
   s3/s4 genuine turn_budget failures. Risk log updated (≤15 harness

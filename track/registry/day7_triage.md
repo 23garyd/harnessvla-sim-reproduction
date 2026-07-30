@@ -28,10 +28,10 @@ check never fired and all four rows were misclassified
 
 - `harness_lib` now scans the raw planner stream: a synthetic
   `AssistantMessage` with an `error` field (e.g. `rate_limit`) →
-  `infra_failure/planner_api_error` (commit 2c49ac0); a `{"type":
+  `infra_failure/planner_api_error` (commit 61c9524); a `{"type":
   "timeout"}` record (SDK `planner_timeout_s` expiry) →
   `budget_exhausted/planner_timeout`, which stays scored because
-  1200 s is a pinned v2 regime bound (commit c9e00e5). Bare
+  1200 s is a pinned v2 regime bound (commit d214888). Bare
   `{"type": "error"}` records (max-turns) are deliberately not matched.
 - The 4 object_swap rows were regenerated from raw artifacts (originals
   preserved as `result_row.json.orig`) and the cells re-run under the

@@ -82,8 +82,10 @@ Ledger: `artifacts/ledger.csv` 87 rows (80 scored + 7 infra);
   evaluation seeds. Frozen core (v1/v2) is never re-run.
 - **Planner session-limit rule**: ≤12 harness cells per session window;
   space windows ~3 h apart (learned the hard way, see §6).
-- Git identity is now `23garyd` (+ `gh auth setup-git` credential
-  helper). Commits before 2026-07-29 are authored `23garyd`.
+- Git identity is `23garyd <76086658+23garyd@users.noreply.github.com>`
+  (repo-local and global). The whole history was re-authored to it on
+  2026-07-29 — see §9.6. Canonical remote is `garyd` →
+  `github.com/23garyd/harnessvla-robot-stack` (private); push there.
 
 ## 5. Registry versions & manifests
 
@@ -176,18 +178,22 @@ bash track/launchers/run_ablation_hiddenmem.sh [4 5]
    all 9 tags (including the 4 annotated taggers) and the identity
    strings in this file were rewritten to `23garyd` via `git
    filter-repo` (`--mailmap` + `--replace-text`); the track was pushed
-   to `github.com/23garyd/aspire-robot-stack` (private). The former
-   `nuPylot/harnessvla-sim` remote is no longer configured locally —
-   `garyd` is the only remote, and the two repos have diverged in both
-   identity and history, so **which one is canonical is undecided**.
+   to `github.com/23garyd/harnessvla-robot-stack` (private), which is
+   now **canonical**. The former `nuPylot/harnessvla-sim` remote is no
+   longer configured locally — `garyd` is the only remote — so that
+   mentor-facing repo still holds the pre-rewrite history and will
+   diverge from this one until someone reconciles them.
    Author/committer dates are unchanged and run provenance is
    unaffected (`run_meta.json` keys on `rpent_commit` +
    `checkpoint_sha256`, never this repo's SHAs), but **every commit SHA
-   changed**, so the 10 in-repo SHA citations in `risk_log.md` (15, 18),
-   `progress_log.md` (167, 168, 349, 350) and `day7_triage.md` (31, 34)
-   are now dangling and still need remapping. Pre-rewrite history
-   survives only in `/home/demo/harnessvla-prerewrite-20260729.bundle`
-   (local, never pushed).
+   changed**. The 5 affected in-repo commit citations were remapped:
+   `2c49ac0`→`61c9524` (`risk_log.md` 18, `progress_log.md` 167,
+   `day7_triage.md` 31) and `c9e00e5`→`d214888` (`progress_log.md` 168,
+   `day7_triage.md` 34). NOT affected, despite looking like SHAs:
+   `0cf8648` is the pinned lerobot fork rev, and `88450c6b…4bed905` /
+   `9aa679f5…365a308` are ledger **sha256** checksums. Pre-rewrite
+   history survives only in
+   `/home/demo/harnessvla-prerewrite-20260729.bundle` (local, unpushed).
 7. Upstream issue reports not yet filed (maintainer-gated path):
    reference absolutes act as confirmation anchors; `tall_item_first_
    basket_placement.md` bias note is **scene-inverted** for low-table
