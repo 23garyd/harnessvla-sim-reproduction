@@ -174,3 +174,58 @@ def test_cli_record_writes_the_inventory(tmp_path, capsys):
     rc = leak_rules.main(["--record", "--out", str(out)])
     assert rc == 0
     assert len(leak_rules.load_inventory(out)["memory"]) == 50
+
+
+def test_tsm_family_parses_recipe_prefix_and_the_10_family():
+    assert leak_rules._tsm_family("object_swap_t2_s0") == "object"
+    assert leak_rules._tsm_family("recipe_object_swap_t2_s0") == "object"
+    assert leak_rules._tsm_family("10_task_t7_s0") == "10"
+    assert leak_rules._tsm_family("recipe_10_task_t7_s0") == "10"
+    assert leak_rules._tsm_family("spatial_swap_t2_s0") == "spatial"
+
+
+def test_patterns_scoped_to_v2_hiddenmem_cover_only_the_object_family():
+    """v2-hiddenmem stashed memory + results_object_pert ONLY. The other three
+    families were legitimately present, so their names are not leak evidence."""
+    pats = set(leak_rules.content_patterns(exp_version="v2-hiddenmem"))
+    assert "tall_item_first_basket_placement" in pats      # memory: hidden
+    assert "object_swap_t2_s0" in pats                     # object TSM: hidden
+    assert "recipe_object_swap_t2_s0" in pats
+    assert "10_task_t7_s0" not in pats                     # not hidden
+    assert "goal_swap_t2_s0" not in pats
+    assert "recipe_spatial_swap_t2_s0" not in pats
+
+
+def test_patterns_scoped_to_v4_cover_every_family():
+    pats = set(leak_rules.content_patterns(exp_version="v4"))
+    assert len(pats) == 199
+    for name in ("object_swap_t2_s0", "10_task_t7_s0", "goal_swap_t2_s0",
+                 "recipe_spatial_swap_t2_s0", "tall_item_first_basket_placement"):
+        assert name in pats
+
+
+def test_unknown_exp_version_falls_back_to_the_strictest_rule_set():
+    """Fail closed: an unrecognised condition must not silently narrow the
+    audit."""
+    assert (leak_rules.content_patterns(exp_version="v99-unknown")
+            == leak_rules.content_patterns(exp_version="v4"))
+
+
+def test_scan_run_dir_reads_exp_version_from_run_meta(tmp_path):
+    import json
+    run = tmp_path / "20260729T120000"
+    (run / "rpent").mkdir(parents=True)
+    (run / "run_meta.json").write_text(json.dumps({"exp_version": "v2-hiddenmem"}))
+    # a non-hidden family under v2-hiddenmem: must NOT be flagged
+    (run / "rpent" / "run.log").write_text("read 10_task_t7_s0.json")
+    assert leak_rules.scan_run_dir(run) == []
+    # a hidden family under v2-hiddenmem: MUST be flagged
+    (run / "rpent" / "run.log").write_text("read object_swap_t2_s0.json")
+    assert leak_rules.scan_run_dir(run) == [("rpent/run.log", "object_swap_t2_s0")]
+
+
+def test_scan_run_dir_without_run_meta_uses_strictest(tmp_path):
+    run = tmp_path / "20260729T120000"
+    (run / "rpent").mkdir(parents=True)
+    (run / "rpent" / "run.log").write_text("read 10_task_t7_s0.json")
+    assert leak_rules.scan_run_dir(run) == [("rpent/run.log", "10_task_t7_s0")]

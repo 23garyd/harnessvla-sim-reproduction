@@ -16,6 +16,7 @@ Patterns come from the checked-in inventory rather than the live directory,
 because during an ablation the live directory is stashed.
 """
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -49,6 +50,30 @@ TRANSCRIPT_GLOBS = (
 )
 
 _KINDS = ("memory", "tsm")
+
+ALL_TSM_FAMILIES = ("spatial", "goal", "object", "10")
+
+# What each ablation condition actually HID. A name is leak evidence only if
+# that run's own condition hid it: v2-hiddenmem stashed memory plus the object
+# family only, so the other three families were legitimately readable and
+# their names prove nothing. Unknown conditions fall back to the strictest set
+# (see _hidden_tsm_families) so the audit fails closed.
+CONDITION_HIDDEN_TSM = {
+    "v2-hiddenmem": ("object",),
+    "v4": ALL_TSM_FAMILIES,
+}
+
+
+def _tsm_family(name):
+    """Family of a TSM basename, e.g. recipe_object_swap_t2_s0 -> object."""
+    core = name[len("recipe_"):] if name.startswith("recipe_") else name
+    return core.split("_", 1)[0]
+
+
+def _hidden_tsm_families(exp_version):
+    if exp_version is None:
+        return ALL_TSM_FAMILIES
+    return CONDITION_HIDDEN_TSM.get(exp_version, ALL_TSM_FAMILIES)
 
 
 def record_inventory(resources_dir=RESOURCES_DIR, out_path=INVENTORY_PATH):
@@ -101,16 +126,21 @@ def load_inventory(path=INVENTORY_PATH):
     return inv
 
 
-def content_patterns(inventory=None, stash_dir=None):
+def content_patterns(inventory=None, stash_dir=None, exp_version=None):
     """Literal strings whose presence proves hidden content was read.
 
     Excludes PROMPT_NAMED leaves and never includes bare directory paths:
     the released prompt instructs the planner to list those, so echoing them
     is expected behaviour under the ablation, not a leak.
+
+    Scoped by condition: TSM names count only for families that the given
+    exp_version actually hid. With exp_version=None or an unrecognised
+    version, every family is included (fail closed).
     """
     inv = inventory if inventory is not None else load_inventory()
+    families = _hidden_tsm_families(exp_version)
     pats = {n for n in inv["memory"] if n not in PROMPT_NAMED}
-    pats |= set(inv["tsm"])
+    pats |= {n for n in inv["tsm"] if _tsm_family(n) in families}
     if stash_dir:
         pats.add(str(stash_dir))
     return sorted(pats)
@@ -129,13 +159,30 @@ def scan_text(text, patterns):
     return sorted({m.group(0) for m in _compile(patterns).finditer(text)})
 
 
-def scan_run_dir(run_dir, stash_dir=None, inventory=None):
+def exp_version_of_run(run_dir):
+    """Read the run's own recorded condition, or None if unavailable."""
+    meta = Path(run_dir) / "run_meta.json"
+    if not meta.is_file():
+        return None
+    try:
+        return json.loads(meta.read_text()).get("exp_version")
+    except ValueError:
+        return None
+
+
+def scan_run_dir(run_dir, stash_dir=None, inventory=None, exp_version=None):
     """Scan one run dir's planner-visible artifacts.
+
+    The rule set is scoped to the condition the run itself recorded in
+    run_meta.json, so a run is only judged against what it actually hid. A
+    missing or unrecognised version falls back to the strictest rules.
 
     Returns a sorted list of (path relative to run_dir, pattern) pairs.
     """
     run_dir = Path(run_dir)
-    patterns = content_patterns(inventory, stash_dir)
+    if exp_version is None:
+        exp_version = exp_version_of_run(run_dir)
+    patterns = content_patterns(inventory, stash_dir, exp_version)
     rx = _compile(patterns)
     hits = set()
     for glob in TRANSCRIPT_GLOBS:
