@@ -158,3 +158,29 @@ def test_plan_cli_condition_filter_excludes_other_conditions(tmp_path, capsys):
     rc = manifests.main(["--plan", str(p), "--condition", "harness"])
     assert rc == 0
     assert capsys.readouterr().out == ""
+
+
+def test_ablation_zeroshot_v4_manifest_is_the_predeclared_design():
+    from pathlib import Path
+    p = (Path(__file__).resolve().parents[1]
+         / "manifests" / "ablation_zeroshot_v4.json")
+    m = manifests.load_manifest(p)
+    assert m["exp_version"] == "v4"
+    # identical to v2/v3 so the ONLY difference is memory access
+    assert m["budgets"] == {"max_steps": 1200, "max_turns": 60,
+                            "max_wall_seconds": 2400}
+    cells = manifests.scored_cells(m)
+    assert len(cells) == 20                      # 4 cells x seeds 1-5
+    assert all(c[0] == "harness" for c in cells)
+    assert {c[1] for c in cells} == {
+        "libero_spatial_task", "libero_object_task",
+        "libero_spatial_swap", "libero_goal_swap"}
+    # zero-shot: NO seed-0 bootstrap anywhere, since bootstrapping would
+    # manufacture the memory being ablated
+    for cell in m["cells"]:
+        assert all(e["seed"] != 0 for e in cell["seeds"])
+    assert sorted({c[3] for c in cells}) == [1, 2, 3, 4, 5]
+    # the excluded floor cells must not sneak in
+    assert not {c[1] for c in cells} & {
+        "libero_goal_task", "libero_10_task", "libero_10_swap",
+        "libero_object_swap"}
