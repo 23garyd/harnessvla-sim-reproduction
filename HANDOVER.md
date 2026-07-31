@@ -57,11 +57,17 @@ higher-risk learned-policy path**, pursued independently on this machine.
    with released RPent + frozen pi0.5 on LIBERO-Pro. Day-10 core: 4 tasks × 5
    held-out seeds × {direct VLA, full harness} ≥ 40 paired rollouts + 1 ablation.
    **Runs entirely on asus.**
-2. `B601_Harness_VLA_Internship_Plan.docx` — frozen ACT grasp primitive on the real
-   B601-RS inside an observe/stage/grasp/verify/retry/memory loop. **The arm, CAN
-   adapter, and D405 are on the robot PC** — ACT *training* can run here on the
-   A6000, but data collection and all robot execution happen on the robot PC
-   (or the arm must be physically moved — open decision, not yet made).
+2. B601 real-robot track — **moved to its own repository (2026-07-31)**:
+   `github.com/23garyd/harnessvla-rebot-b601` (local `/home/demo/github_b601_harnessVLA`).
+   Frozen ACT grasp primitive on the real B601-RS inside an
+   observe/stage/grasp/verify/retry/memory loop. Its plan document, safety
+   layer, registry and environment now live there; this repo keeps no B601
+   code or charter. **The arm, CAN adapter, and D405 are on the robot PC** —
+   ACT *training* can run here on the A6000, but data collection and all robot
+   execution happen on the robot PC (or the arm must be physically moved —
+   open decision, not yet made). What the simulation track measured that
+   constrains that work is distilled in the B601 repo's
+   `docs/sim_findings_that_transfer.md`.
 
 ## Bench artifacts: single source of truth (safety-relevant)
 
