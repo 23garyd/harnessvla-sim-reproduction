@@ -1,5 +1,7 @@
 # HarnessVLA sim track (asus)
 
+当前实现的技术入口、附件与核验记录见 [技术证据索引](docs/evidence/oct-m3/README.md)。
+
 Reproduction of HarnessVLA (arXiv:2607.08448, RPent) on LIBERO-Pro with a
 frozen pi0.5 checkpoint. Runs on the RTX A6000 (GPU 0) only.
 
