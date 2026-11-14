@@ -1,5 +1,7 @@
 # HarnessVLA sim track (asus)
 
+补充技术证据：[比较与演示材料索引](docs/evidence/nov-m4/README.md)。
+
 当前实现的技术入口、附件与核验记录见 [技术证据索引](docs/evidence/oct-m3/README.md)。
 
 Reproduction of HarnessVLA (arXiv:2607.08448, RPent) on LIBERO-Pro with a
