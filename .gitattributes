@@ -1,3 +1,5 @@
 
 # 技术证据哈希按原始字节计算，跨平台检出时保留原始换行。
 docs/evidence/oct-m3/** -text whitespace=cr-at-eol
+docs/evidence/nov-m4/** -text whitespace=cr-at-eol
+docs/evidence/dec-m5/** -text whitespace=cr-at-eol
