@@ -1,9 +1,9 @@
-核验日期：2026-11-14
-范围：November/December 技术证据整理所用无硬件测试子集，未新增实机试验、GPU rollout、训练或模型调用。
-环境：macOS，现有 Anaconda；分析、清单及环境配置测试
-命令：python -m pytest track/tests/test_compare.py track/tests/test_build_ledger.py track/tests/test_manifests.py track/tests/test_pin_check.py track/tests/test_setup.py -q -p no:anyio
-退出码：0
-跳过项不计为通过；这些输出不证明干净机器重建或实体机器人安全演示完成。
+Verification date: 2026-11-14
+Scope: Hardware-free test subset used for the November/December technical evidence compilation; no new physical robot experiments, GPU rollouts, training, or model calls.
+Environment: macOS with the existing Anaconda installation; analysis, manifest, and environment configuration tests
+Command: python -m pytest track/tests/test_compare.py track/tests/test_build_ledger.py track/tests/test_manifests.py track/tests/test_pin_check.py track/tests/test_setup.py -q -p no:anyio
+Exit code: 0
+Skipped items do not count as passing; these outputs do not establish completion of a clean-machine rebuild or a safe physical robot demonstration.
 
 .....................................................                    [100%]
 53 passed in 4.93s
