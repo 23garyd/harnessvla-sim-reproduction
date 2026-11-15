@@ -1,5 +1,7 @@
 # Technical Guide Before the Showcase Update
 
+For current guides and evidence, use the [documentation index](../README.md).
+
 This historical README records the status and commands of its original environment. See the [current project overview](../../README.md). The editorial header is translated; the historical run instructions below are retained.
 
 # HarnessVLA sim track (asus)

@@ -1,5 +1,5 @@
 {
-  "scope": "对既有账本的无GPU离线分析，非新增rollout",
+  "scope": "Offline analysis of the existing ledger without GPU use; no new rollout",
   "source": "../oct-m3/snapshot-2026-08-25/harnessvla_ledger_80_rollouts.csv",
   "table": {
     "cells": {
