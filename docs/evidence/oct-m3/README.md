@@ -1,22 +1,22 @@
-# HarnessVLA 仿真实现与历史证据索引
+# HarnessVLA Simulation Implementation and Historical Evidence Index
 
-整理日期：2026-11-14。实现基线：`cc653453f0bb6384a442007a1b0b411de827010b`。
-本次整理已有仿真实验附件，不新增 rollouts，也不把仿真视频当作 B601 实机录像。
+Prepared on 2026-11-14. Implementation baseline: `cc653453f0bb6384a442007a1b0b411de827010b`.
+This update packages existing simulation artifacts, with no new rollouts. Simulation video is not presented as B601 hardware footage.
 
-| 功能 | 实现 | 可复核附件 |
+| Feature | Implementation | Auditable artifacts |
 |---|---|---|
-| 固定策略与 harness 对照执行 | [direct](../../../track/launchers/run_direct.py)、[harness](../../../track/launchers/run_harness.py) | [实验注册表快照](snapshot-2026-08-25/harnessvla_experiment_registry.md) |
-| 配对账本与统计分析 | [账本构建](../../../track/analysis/build_ledger.py)、[比较分析](../../../track/analysis/compare.py) | [历史账本 CSV](snapshot-2026-08-25/harnessvla_ledger_80_rollouts.csv)、[技术进展记录](snapshot-2026-08-25/harnessvla_progress_log.md) |
-| 仿真执行示例 | [harness 实现](../../../track/launchers/harness_lib.py) | [仿真视频](video/A_harness_success_spatial_task.mp4) |
+| Frozen-policy and harness comparison runs | [direct](../../../track/launchers/run_direct.py), [harness](../../../track/launchers/run_harness.py) | [Experiment registry snapshot](snapshot-2026-08-25/harnessvla_experiment_registry.md) |
+| Paired ledger and statistical analysis | [Ledger builder](../../../track/analysis/build_ledger.py), [comparison analysis](../../../track/analysis/compare.py) | [Historical ledger CSV](snapshot-2026-08-25/harnessvla_ledger_80_rollouts.csv), [technical progress record](snapshot-2026-08-25/harnessvla_progress_log.md) |
+| Simulation execution example | [Harness implementation](../../../track/launchers/harness_lib.py) | [Simulation video](video/A_harness_success_spatial_task.mp4) |
 
-`snapshot-2026-08-25/` 与既有技术证据包中的文件字节相同。视频原用于仿真空间任务演示，与其他月度材料重复使用不产生新增实验，也不证明物理 B601、安全拒绝或链路降级行为。
+Files in `snapshot-2026-08-25/` are byte-identical to the existing technical evidence pack. The video originally illustrated a simulated spatial task. Reusing it in multiple monthly materials does not create a new experiment or establish physical B601 execution, safety refusal or link degradation.
 
-账本文件名含 `80_rollouts`，但内容含基础与扩展／消融记录。统计时须按注册表中的版本、条件、配对和终止原因过滤，不能按文件名推断全部记录属于同一组实验。原始每次 rollout 的大型目录不包含于此处，CSV 中的机器路径也不是外部可下载地址。
+Although the ledger filename contains `80_rollouts`, its contents include base, extended and ablation records. Statistics require filtering by the registry version, conditions, pairing and termination reasons; the filename does not imply that every record belongs to one experiment. Large original per-rollout directories are not included here, and machine paths in the CSV are not externally downloadable URLs.
 
-[2026-11-14 测试输出](verification/2026-11-14-tests.txt) 记录所列 36 项分析与 harness 单元测试通过，不是重新执行 GPU 仿真实验。
+The [2026-11-14 test output](verification/2026-11-14-tests.txt) records 36 passing analysis and harness unit tests, not a new GPU simulation run.
 
-本仓库与 ASPIRE 仿真仓库分别引用、分别报告结果。
+This repository and the ASPIRE simulation repository are cited separately and report separate results.
 
-[manifest.csv](manifest.csv) 给出本目录全部附件的字节数、SHA-256 及来源。
+[manifest.csv](manifest.csv) records byte counts, SHA-256 and provenance for the artifacts in this directory.
 
-[implementation-commits.csv](implementation-commits.csv) 将每项功能对应到实现文件、最后修改该文件的历史提交、完整基线中的代码链接和附件路径。历史实现提交与本次证据整理提交分别保留，避免把文档整理称作新增实现。
+[implementation-commits.csv](implementation-commits.csv) maps each feature to its implementation files, the historical commits that last changed them, code links at the full baseline, and artifact paths. Historical implementation commits remain separate from evidence-packaging commits so documentation work is not presented as new implementation.

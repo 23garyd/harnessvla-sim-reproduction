@@ -1,38 +1,38 @@
-# HarnessVLA 固定策略与外层控制复现 评审阅读指南
+# HarnessVLA Frozen-Policy and Harness Reproduction — Reading Guide
 
-本页帮助评审者从问题、实现、证据和局限理解 Gary 的实习工作。概览与演示见[首页](../../README.md)。
+This guide connects the research question, implementation, evidence and limitations. See the [project overview](../../README.md) for demos and a summary.
 
-## 当前交付定位
+## Current Scope
 
-这是 Gary 实习中的 HarnessVLA 仿真复现项目。项目在 LIBERO-Pro 上比较直接调用固定策略与加入 harness 的执行方式，并通过配对账本、失败分类和记忆消融检查结果来自哪里。
+This project reproduces HarnessVLA in LIBERO-Pro by comparing direct calls to a frozen policy with harness-mediated execution. Paired ledgers, failure classification and memory ablations are used to investigate where the observed differences come from.
 
-对保留账本按完整条件配对并排除基础设施失败，离线复算为 direct 15/40、harness 23/40；其中11对被挽回、3对出现回归。该统计来自既有记录，不是新增80次实验。
+Offline recomputation of the retained ledger, using complete condition pairs and excluding infrastructure failures, gives direct 15/40 and harness 23/40: 11 rescued pairs and 3 regressed pairs. These are existing records, not 80 new rollouts.
 
-这些是仿真结果，不能证明物理 B601、无线链路比较或工业部署。账本不同阶段的分母不同，早期5/20与11/20不能与扩展15/40与23/40混为同一次实验。
+These are simulation results, not evidence of physical B601 performance, wireless comparisons or industrial deployment. Ledger stages use different denominators: the earlier 5/20 versus 11/20 must not be combined with the expanded 15/40 versus 23/40 as a single experiment.
 
-## 软件结构
+## Software Architecture
 
-![软件结构示意](assets/architecture.svg)
+![Software architecture illustration](assets/architecture.svg)
 
-图为代码结构说明，执行与实测范围仍按正文证据解释。
+The diagram explains code boundaries. Claims about execution and measured behavior remain limited to the evidence described below.
 
-## 贡献与来源
+## Work and Attribution
 
-本项目复现已有研究并完成工程实现、实验和分析，不声称发明上游论文方法。[实现提交映射](../evidence/oct-m3/implementation-commits.csv)区分源代码贡献与证据整理。两个ASPIRE仓库有共享历史，不能把相同文件或仿真片段重复计作两次成果。本次增加阅读说明和素材入口，未新增训练、rollout或机器人动作。
+This project reproduces existing research and provides engineering implementation, experiments and analysis. Upstream paper methods remain attributed to their authors. The [implementation commit map](../evidence/oct-m3/implementation-commits.csv) separates code contributions from evidence packaging. The two ASPIRE repositories share history; identical files or simulation clips are not counted as separate achievements. This documentation update adds reading guidance and media entry points, with no new training, rollouts or robot actions.
 
-## 证据等级
+## Evidence Levels
 
-| 等级 | 可以支持的判断 | 不能替代的证明 |
+| Evidence | Supports | Does not establish |
 |---|---|---|
-| 源代码与无硬件测试 | 接口、控制逻辑、错误处理及部分边界 | 真实机械臂动作、标定与物理安全 |
-| 仿真结果和视频 | 指定仿真环境、条件和个案行为 | B601实机或工业部署 |
-| 实机结果、视频与遥测 | 所示实体试验的过程和原始结局 | 其他pipeline、其他任务或未测的无线性能 |
-| 固定提交与哈希 | 来源文件可追踪，整理版本可复核 | 实验发生时间、结果成功或合同最终验收 |
+| Source code and no-hardware tests | Interfaces, control logic, error handling and some boundaries | Physical arm motion, real calibration or physical safety |
+| Simulation results and videos | Behavior in the specified simulated environment, conditions and examples | Physical B601 performance or industrial deployment |
+| Hardware results, video and telemetry | The shown physical trial and its recorded outcome | Other pipelines, other tasks or unmeasured wireless performance |
+| Pinned commits and hashes | Traceable source files and auditable packaged versions | Experiment timing, task success or final contractual acceptance |
 
-媒体来源见[media-provenance.json](media-provenance.json)。如有海报，均为现有视频1秒处直接抽帧，未用生成图像替代实验画面。软件结构图是解释性示意，不是运行证据。
+See [media-provenance.json](media-provenance.json) for sources. Where present, preview images are frames extracted directly at 1 second from existing videos; generated imagery does not replace experimental footage. Architecture diagrams are explanatory illustrations, not execution evidence.
 
-## 阶段与证据入口
+## Stages and Evidence
 
-[October／M3](../evidence/oct-m3/README.md)、[November／M4](../evidence/nov-m4/README.md)、[December／M5](../evidence/dec-m5/README.md)分别保留技术范围与缺口。原始实验发生在其记录日期，不能按交付月份改写时间线。
+[October / M3](../evidence/oct-m3/README.md), [November / M4](../evidence/nov-m4/README.md) and [December / M5](../evidence/dec-m5/README.md) retain their technical scope and outstanding items. Original experiment dates are not reassigned to delivery months.
 
-本仓库保持原访问权限。技术页面不包含发票、商业合同或付款信息。
+Repository access permissions are unchanged. Technical pages do not contain invoices, commercial contracts or payment information.
