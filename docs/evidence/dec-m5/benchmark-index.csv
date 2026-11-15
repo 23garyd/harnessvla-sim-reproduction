@@ -1,0 +1,4 @@
+track,recorded_result,source_path,boundary
+HarnessVLA direct,15/40,../nov-m4/paired-analysis.json,冻结账本离线复算
+HarnessVLA harness,23/40,../nov-m4/paired-analysis.json,与direct为完整配对；非新GPU实验
+四个仿真案例,视频已归档,../nov-m4/video-index.csv,案例不能代替总体统计或实机证明
