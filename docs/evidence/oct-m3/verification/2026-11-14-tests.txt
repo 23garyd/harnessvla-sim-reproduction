@@ -1,0 +1,9 @@
+核验日期：2026-11-14
+实现提交：cc653453f0bb6384a442007a1b0b411de827010b
+范围：所列测试子集；无物理机器人动作，无新模型推理或训练。
+执行环境：macOS，Python 3.12，现有 Anaconda 环境
+命令：python3 -m pytest track/tests/test_compare.py track/tests/test_build_ledger.py track/tests/test_harness_lib.py -q -p no:anyio
+退出码：0
+
+....................................                                     [100%]
+36 passed in 0.12s
