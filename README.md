@@ -44,6 +44,8 @@ These are simulation results, not evidence of physical B601 performance, wireles
 
 ## Code Navigation and Verification
 
+For the complete guide and evidence map, see the [documentation index](docs/README.md).
+
 | Path | Contents |
 |---|---|
 | `track/launchers/` | Direct, harness and ablation entry points |

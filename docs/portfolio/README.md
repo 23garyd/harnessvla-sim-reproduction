@@ -1,6 +1,6 @@
 # HarnessVLA Frozen-Policy and Harness Reproduction — Reading Guide
 
-This guide connects the research question, implementation, evidence and limitations. See the [project overview](../../README.md) for demos and a summary.
+This guide connects the research question, implementation, evidence and limitations. See the [project overview](../../README.md) for demos and a summary. The [documentation index](../README.md) links to all delivery-stage evidence.
 
 ## Current Scope
 

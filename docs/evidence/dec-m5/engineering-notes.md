@@ -1,9 +1,9 @@
-# 仿真评估与证据管理的技术建议
+# Technical recommendations for simulation evaluation and evidence management
 
-依据：[配对分析实现](../../../track/analysis/compare.py)、[原记忆审计](../../../track/registry/memory_audit.md)、[当前账本复算](../nov-m4/paired-analysis.json)。
+Basis: [paired analysis implementation](../../../track/analysis/compare.py), [original memory audit](../../../track/registry/memory_audit.md), and [current ledger recomputation](../nov-m4/paired-analysis.json).
 
-- 仅比较完整配对，基础设施失败、时间预算耗尽、任务失败应分开记录。不能把启动开销不同的墙钟列直接当作性能比较。
-- 记忆条件、缓存与被隔离行保留独立命名空间；基于冻结策略的条件改变需可追溯到同一任务、种子及模型。
-- 仿真中的个案与聚合结果分别引用；仿真结果不能证明物理机器人、无线链路或工业部署表现。
+- Compare only complete pairs, and record infrastructure failures, exhausted time budgets, and task failures separately. Wall-clock columns with different startup overheads cannot directly serve as performance comparisons.
+- Keep memory conditions, caches, and quarantined rows in separate namespaces; condition changes based on a frozen policy must be traceable to the same task, seed, and model.
+- Cite individual simulation cases and aggregate results separately; simulation results do not establish performance for physical robots, wireless links, or industrial deployment.
 
-后续工程：补足大体量运行目录的可下载归档；在固定 RPent、模型校验与依赖后完成第三方复现；真实链路和机器人场景应另有实验记录。当前离线账本复算不等于重跑 GPU benchmark。
+Further engineering work: provide downloadable archives of the large run directories; complete third-party reproduction after pinning RPent, verifying models, and fixing dependencies; maintain separate experiment records for real links and robot scenarios. The current offline ledger recomputation is not a rerun of the GPU benchmark.

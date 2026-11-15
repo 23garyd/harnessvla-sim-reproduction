@@ -1,6 +1,6 @@
 {
   "prepared_on": "2026-11-14",
   "parent_evidence_commit": "b251baff4f575b56dd4d80d4a90789f730700031",
-  "experiment_scope": "已有研究记录与运行附件；未新增实机/GPU/模型实验",
+  "experiment_scope": "Existing research records and run artifacts; no new physical robot/GPU/model experiments",
   "approval_report_included": false
 }
