@@ -7,20 +7,21 @@
       "kind": "video",
       "path": "docs/evidence/oct-m3/video/A_harness_success_spatial_task.mp4",
       "sha256": "04d6b0fd7fb2de1bf98de02a7b7bd9e5a24602e904014a3ebd1a7b5654af9355",
-      "caption": "LIBERO-Pro 仿真成功单例。画面用于理解任务，不替代配对统计，也不是 B601 实机演示。"
+      "caption": "One successful LIBERO-Pro simulation example. The clip illustrates the task; it does not replace paired statistics and is not a B601 hardware demonstration."
     },
     {
       "kind": "poster",
       "path": "docs/portfolio/assets/demo-poster.png",
       "derived_from": "docs/evidence/oct-m3/video/A_harness_success_spatial_task.mp4",
-      "extraction": "ffmpeg -ss 1.0 -i SOURCE -frames:v 1 OUTPUT；无生成画面或合成动作",
+      "extraction": "ffmpeg -ss 1.0 -i SOURCE -frames:v 1 OUTPUT; direct extraction, no generated imagery or synthetic actions",
       "sha256": "258d275518b17e9b13ba9089ea786aeb917f87c948b68a8ba871311ba74dff41"
     },
     {
       "kind": "explanatory_diagram",
       "path": "docs/portfolio/assets/architecture.svg",
-      "sha256": "b2a97baf1749a68a079d1cc6cc6b2140c3209afc860940157d0643491f65235d",
-      "caption": "依当前代码边界绘制的软件结构示意，非实验画面或新增执行证据"
+      "sha256": "19ddac0ae8c5741bdff5498aa6348915787c4fc59947eee4095cf2712911147b",
+      "caption": "Software architecture illustration based on current code boundaries; not experimental footage or new execution evidence"
     }
-  ]
+  ],
+  "documentation_updated_at": "2026-11-14"
 }
