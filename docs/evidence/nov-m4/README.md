@@ -1,16 +1,16 @@
-# HarnessVLA 仿真对照与消融附件
+# HarnessVLA Simulation Comparison and Ablation Artifacts
 
-整理日期：2026-11-14。账本和视频均来自原有仿真实验，本次仅做无 GPU 离线统计与技术整理。
+Prepared on 2026-11-14. Ledgers and videos come from existing simulation experiments. This update performs offline statistics without a GPU and packages technical materials only.
 
-| 工作 | 实现 | 附件 |
+| Work | Implementation | Artifacts |
 |---|---|---|
-| 配对条件与终止原因统计 | [比较程序](../../../track/analysis/compare.py)、[账本构建](../../../track/analysis/build_ledger.py) | [既有账本](../oct-m3/snapshot-2026-08-25/harnessvla_ledger_80_rollouts.csv)、[本次离线分析](paired-analysis.json) |
-| 固定策略与 harness 执行 | [harness](../../../track/launchers/harness_lib.py) | [视频目录](video/)、[视频索引与哈希](video-index.csv) |
-| 隐藏记忆消融及失败边界 | [消融入口](../../../track/launchers/run_ablation_hiddenmem.sh) | [既有机制记录](../../../track/registry/day8_mechanism.md)、[记忆审计](../../../track/registry/memory_audit.md) |
-| 分析与环境门禁检查 | [测试](../../../track/tests/) | [53 项测试输出](verification/2026-11-14-tests.txt) |
+| Paired conditions and termination statistics | [Comparison program](../../../track/analysis/compare.py), [ledger builder](../../../track/analysis/build_ledger.py) | [Existing ledger](../oct-m3/snapshot-2026-08-25/harnessvla_ledger_80_rollouts.csv), [offline analysis](paired-analysis.json) |
+| Frozen-policy and harness execution | [harness](../../../track/launchers/harness_lib.py) | [Video directory](video/), [video index and hashes](video-index.csv) |
+| Hidden-memory ablation and failure boundaries | [Ablation entry point](../../../track/launchers/run_ablation_hiddenmem.sh) | [Existing mechanism notes](../../../track/registry/day8_mechanism.md), [memory audit](../../../track/registry/memory_audit.md) |
+| Analysis and environment gate checks | [Tests](../../../track/tests/) | [53-test output](verification/2026-11-14-tests.txt) |
 
-按原比较程序仅取完整条件配对、排除基础设施失败，已恢复账本重新算得 direct 15/40、harness 23/40。这是当前保留账本的离线复算，不是新 rollout；条件定义、终止原因、消融污染与隔离行仍按原注册表和审计记录解释。
+Using the original comparison program, complete condition pairs and exclusion of infrastructure failures, the recovered ledger recomputes to direct 15/40 and harness 23/40. This is offline recomputation of the retained ledger, not new rollouts. Condition definitions, termination reasons, ablation contamination and quarantined rows remain subject to the original registry and audit notes.
 
-四段视频分别说明回归、隐藏记忆消融、无记忆超时及增加时钟预算的个案。它们均是仿真视频，不能充当 B601 实机、无线通信比较或两个工业应用场景均已完成的证据。局部案例也不能代替完整配对统计。
+The four clips illustrate regression, hidden-memory ablation, no-memory timeout and a longer clock budget. All are simulation footage, not evidence of physical B601 execution, wireless comparisons or completion of two industrial application demonstrations. Individual cases do not replace full paired statistics.
 
-[implementation-commits.csv](implementation-commits.csv) 映射代码提交，[manifest.csv](manifest.csv) 保留所有附件哈希。
+[implementation-commits.csv](implementation-commits.csv) maps code commits; [manifest.csv](manifest.csv) retains artifact hashes.
